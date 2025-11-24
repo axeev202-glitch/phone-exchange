@@ -5,14 +5,19 @@
 }
 
 :root {
-    --primary: #000000;
-    --secondary: #1a1a1a;
-    --accent: #ffffff;
+    --primary: #0f0f23;
+    --secondary: #1a1a2e;
+    --accent: #6c63ff;
+    --accent-light: #8a85ff;
+    --accent-dark: #5752cc;
     --text: #ffffff;
-    --text-secondary: #b0b0b0;
-    --border: #333333;
-    --success: #00d4aa;
-    --card-bg: #0a0a0a;
+    --text-secondary: #b8b8d6;
+    --border: #2d2d4d;
+    --success: #00e5b0;
+    --card-bg: #16162e;
+    --gradient-1: linear-gradient(135deg, #6c63ff 0%, #4a44ff 100%);
+    --gradient-2: linear-gradient(135deg, #ff6b9d 0%, #ff8e53 100%);
+    --gradient-3: linear-gradient(135deg, #00e5b0 0%, #00b894 100%);
 }
 
 body {
@@ -33,7 +38,7 @@ body {
     position: relative;
 }
 
-/* Градиентный фон */
+/* Градиентный фон с анимацией */
 .container::before {
     content: '';
     position: fixed;
@@ -42,19 +47,20 @@ body {
     width: 100%;
     height: 100%;
     background: 
-        radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.05) 0%, transparent 50%);
+        radial-gradient(circle at 10% 20%, rgba(108, 99, 255, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(255, 107, 157, 0.1) 0%, transparent 40%),
+        radial-gradient(circle at 50% 50%, rgba(0, 229, 176, 0.05) 0%, transparent 50%);
     pointer-events: none;
     z-index: -1;
+    animation: gradientShift 8s ease-in-out infinite;
 }
 
-/* Шапка в стиле Altushki */
+/* Шапка в новом стиле */
 .header {
-    background: rgba(10, 10, 10, 0.9);
+    background: rgba(22, 22, 46, 0.95);
     backdrop-filter: blur(20px);
     color: var(--text);
-    padding: 20px 15px 15px;
+    padding: 25px 15px 20px;
     text-align: center;
     position: sticky;
     top: 0;
@@ -63,22 +69,27 @@ body {
 }
 
 .header h1 {
-    font-size: 1.4em;
-    margin-bottom: 4px;
-    font-weight: 600;
+    font-size: 1.6em;
+    margin-bottom: 6px;
+    font-weight: 700;
     letter-spacing: -0.5px;
+    background: var(--gradient-1);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .header p {
-    opacity: 0.7;
-    font-size: 0.75em;
-    font-weight: 300;
+    opacity: 0.8;
+    font-size: 0.8em;
+    font-weight: 400;
+    color: var(--text-secondary);
 }
 
 /* Навигация */
 .nav {
     display: flex;
-    background: rgba(10, 10, 10, 0.9);
+    background: rgba(22, 22, 46, 0.95);
     backdrop-filter: blur(20px);
     border-bottom: 1px solid var(--border);
     position: sticky;
@@ -89,15 +100,15 @@ body {
 
 .nav-btn {
     flex: 1;
-    padding: 16px 5px;
+    padding: 18px 5px;
     border: none;
     background: none;
     cursor: pointer;
-    font-size: 0.75em;
+    font-size: 0.8em;
     transition: all 0.3s ease;
     color: var(--text-secondary);
     position: relative;
-    font-weight: 400;
+    font-weight: 500;
 }
 
 .nav-btn.active {
@@ -110,10 +121,10 @@ body {
     bottom: 0;
     left: 50%;
     transform: translateX(-50%);
-    width: 20px;
-    height: 2px;
-    background: var(--text);
-    border-radius: 1px;
+    width: 24px;
+    height: 3px;
+    background: var(--gradient-1);
+    border-radius: 2px;
 }
 
 .nav-btn:hover {
@@ -147,7 +158,7 @@ body {
     transform: translateX(0);
 }
 
-/* Поиск в стиле Altushki */
+/* Поиск в новом стиле */
 .search-bar {
     padding: 15px;
     background: transparent;
@@ -168,7 +179,8 @@ body {
 
 .search-input:focus {
     background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.3);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.1);
 }
 
 .search-input::placeholder {
@@ -186,17 +198,17 @@ body {
     margin-bottom: 12px;
     border-radius: 20px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     border: 1px solid var(--border);
     position: relative;
     overflow: hidden;
-    animation: slideInUp 0.5s ease;
+    animation: cardAppear 0.6s ease-out;
 }
 
 .listing-card.new-listing {
-    animation: highlightPulse 2s ease;
-    border-color: var(--success);
-    box-shadow: 0 0 20px rgba(0, 212, 170, 0.3);
+    animation: magicAppear 1s ease-out;
+    border: 1px solid var(--accent);
+    box-shadow: 0 10px 30px rgba(108, 99, 255, 0.3);
 }
 
 .listing-card::before {
@@ -206,7 +218,7 @@ body {
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.03), transparent);
+    background: linear-gradient(90deg, transparent, rgba(108, 99, 255, 0.1), transparent);
     transition: left 0.6s ease;
 }
 
@@ -215,8 +227,9 @@ body {
 }
 
 .listing-card:hover {
-    transform: translateY(-2px);
-    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-5px) scale(1.02);
+    border-color: var(--accent);
+    box-shadow: 0 15px 40px rgba(108, 99, 255, 0.2);
 }
 
 .listing-content {
@@ -237,7 +250,7 @@ body {
     text-align: center;
     padding: 5px;
     flex-shrink: 0;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--gradient-1);
     position: relative;
     overflow: hidden;
 }
@@ -252,10 +265,10 @@ body {
     background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
 }
 
-.listing-image.iphone { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-.listing-image.samsung { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+.listing-image.iphone { background: var(--gradient-1); }
+.listing-image.samsung { background: var(--gradient-2); }
 .listing-image.xiaomi { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-.listing-image.google { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+.listing-image.google { background: var(--gradient-3); }
 .listing-image.huawei { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
 
 .listing-details {
@@ -347,7 +360,7 @@ body {
 .avatar {
     width: 80px;
     height: 80px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--gradient-1);
     border-radius: 50%;
     margin: 0 auto 20px;
     display: flex;
@@ -457,8 +470,9 @@ body {
 .form-group select:focus,
 .form-group textarea:focus {
     outline: none;
-    border-color: rgba(255, 255, 255, 0.3);
+    border-color: var(--accent);
     background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.1);
 }
 
 .form-group textarea {
@@ -467,13 +481,13 @@ body {
     font-family: inherit;
 }
 
-/* Кнопки в стиле Altushki */
+/* Кнопки в новом стиле */
 .btn {
     padding: 16px 24px;
     border: none;
     border-radius: 15px;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
     text-align: center;
@@ -491,7 +505,7 @@ body {
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
     transition: left 0.6s ease;
 }
 
@@ -500,15 +514,14 @@ body {
 }
 
 .btn-primary {
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--text);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: var(--gradient-1);
+    color: white;
+    border: none;
 }
 
 .btn-primary:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.3);
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(108, 99, 255, 0.4);
 }
 
 .btn-secondary {
@@ -531,10 +544,10 @@ body {
 }
 
 .loading-spinner {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     border: 2px solid transparent;
-    border-top: 2px solid var(--text);
+    border-top: 2px solid white;
     border-radius: 50%;
     animation: spin 1s linear infinite;
 }
@@ -734,7 +747,7 @@ body {
     font-size: 1em;
     text-align: center;
     margin-bottom: 20px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--gradient-1);
     position: relative;
     overflow: hidden;
 }
@@ -803,7 +816,7 @@ body {
 
 /* Специальные эффекты */
 .glow-text {
-    background: linear-gradient(135deg, var(--success), #667eea);
+    background: linear-gradient(135deg, var(--success), var(--accent));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -841,7 +854,50 @@ body {
     margin-left: 10px;
 }
 
-/* Анимация успеха */
+/* НОВЫЕ АНИМАЦИИ */
+
+@keyframes gradientShift {
+    0%, 100% {
+        background: 
+            radial-gradient(circle at 10% 20%, rgba(108, 99, 255, 0.15) 0%, transparent 40%),
+            radial-gradient(circle at 90% 80%, rgba(255, 107, 157, 0.1) 0%, transparent 40%),
+            radial-gradient(circle at 50% 50%, rgba(0, 229, 176, 0.05) 0%, transparent 50%);
+    }
+    50% {
+        background: 
+            radial-gradient(circle at 20% 10%, rgba(108, 99, 255, 0.15) 0%, transparent 40%),
+            radial-gradient(circle at 80% 90%, rgba(255, 107, 157, 0.1) 0%, transparent 40%),
+            radial-gradient(circle at 60% 40%, rgba(0, 229, 176, 0.05) 0%, transparent 50%);
+    }
+}
+
+@keyframes cardAppear {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes magicAppear {
+    0% {
+        opacity: 0;
+        transform: translateY(50px) scale(0.8) rotate(-5deg);
+    }
+    50% {
+        opacity: 0.8;
+        transform: translateY(-10px) scale(1.05) rotate(2deg);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1) rotate(0deg);
+    }
+}
+
+/* Улучшенная анимация успеха */
 .success-animation {
     position: fixed;
     top: 50%;
@@ -852,15 +908,94 @@ body {
 }
 
 .success-check {
-    width: 80px;
-    height: 80px;
-    background: var(--success);
+    width: 100px;
+    height: 100px;
+    background: var(--gradient-3);
     border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5em;
+    color: white;
+    animation: successPulse 0.8s ease-out;
+    box-shadow: 0 0 50px rgba(0, 229, 176, 0.5);
+    position: relative;
+}
+
+.success-check::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    right: -10px;
+    bottom: -10px;
+    border: 2px solid var(--success);
+    border-radius: 50%;
+    animation: ripple 1s ease-out infinite;
+}
+
+@keyframes successPulse {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes ripple {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1.5);
+        opacity: 0;
+    }
+}
+
+/* Анимация перехода между вкладками */
+.tab-transition {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 100px;
+    height: 100px;
+    background: var(--gradient-1);
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    z-index: 10000;
+    pointer-events: none;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 2em;
     color: white;
-    animation: successCheck 0.6s ease-out;
-    box-shadow: 0 0 30px rgba(0, 212, 170, 0.5);
+    box-shadow: 0 0 60px rgba(108, 99, 255, 0.6);
+    animation: circleExpand 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Частицы для анимации */
+.particles-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 9999;
+}
+
+.particle {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    pointer-events: none;
 }

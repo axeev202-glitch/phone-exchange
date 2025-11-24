@@ -210,20 +210,75 @@ async function createListing() {
 
 // Анимация успеха и перехода к ленте
 async function animateSuccessAndTransition() {
-    // Создаем анимацию успеха
+    // Создаем улучшенную анимацию успеха
     const successAnimation = document.createElement('div');
     successAnimation.className = 'success-animation';
-    successAnimation.innerHTML = '<div class="success-check">✅</div>';
+    successAnimation.innerHTML = `
+        <div class="success-check">
+            <div style="transform: scale(0.8)">✨</div>
+        </div>
+    `;
     document.body.appendChild(successAnimation);
     
+    // Добавляем частицы
+    createParticles();
+    
     // Ждем завершения анимации успеха
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 1500));
     
     // Убираем анимацию успеха
     successAnimation.remove();
     
     // Запускаем анимацию перехода
     animateToFeed();
+}
+
+// Создание частиц для анимации успеха
+function createParticles() {
+    const particlesContainer = document.createElement('div');
+    particlesContainer.className = 'particles-container';
+    
+    const particles = [];
+    const colors = ['#6c63ff', '#ff6b9d', '#00e5b0', '#8a85ff'];
+    
+    for (let i = 0; i < 12; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.background = colors[i % colors.length];
+        
+        particlesContainer.appendChild(particle);
+        particles.push(particle);
+    }
+    
+    document.body.appendChild(particlesContainer);
+    
+    // Анимация разлета частиц
+    particles.forEach((particle, index) => {
+        const angle = (index / particles.length) * Math.PI * 2;
+        const distance = 100 + Math.random() * 50;
+        const duration = 800 + Math.random() * 400;
+        
+        particle.animate([
+            {
+                transform: 'translate(-50%, -50%) scale(1)',
+                opacity: 1
+            },
+            {
+                transform: `translate(-50%, -50%) translate(${Math.cos(angle) * distance}px, ${Math.sin(angle) * distance}px) scale(0)`,
+                opacity: 0
+            }
+        ], {
+            duration: duration,
+            easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+        }).onfinish = () => {
+            particle.remove();
+        };
+    });
+    
+    // Убираем контейнер частиц после анимации
+    setTimeout(() => {
+        particlesContainer.remove();
+    }, 1200);
 }
 
 // Анимация перехода к ленте
@@ -235,56 +290,30 @@ function animateToFeed() {
     
     // Создаем элемент для анимации перехода
     const transitionElement = document.createElement('div');
-    transitionElement.style.cssText = `
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        width: 100px;
-        height: 100px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-radius: 50%;
-        transform: translate(-50%, -50%) scale(0);
-        z-index: 10000;
-        pointer-events: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 2em;
-        color: white;
-        box-shadow: 0 0 50px rgba(102, 126, 234, 0.5);
-    `;
+    transitionElement.className = 'tab-transition';
     transitionElement.innerHTML = '📱';
     document.body.appendChild(transitionElement);
     
-    // Анимация расширения круга
-    const animation = transitionElement.animate([
-        { 
-            transform: 'translate(-50%, -50%) scale(0)',
-            opacity: 1
-        },
-        { 
-            transform: 'translate(-50%, -50%) scale(1.5)',
-            opacity: 0.8
-        },
-        { 
-            transform: 'translate(-50%, -50%) scale(4)',
-            opacity: 0
-        }
-    ], {
-        duration: 800,
-        easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
-    });
+    // Плавное скрытие формы создания с анимацией
+    createTab.style.transform = 'translateX(-100%)';
+    createTab.style.opacity = '0';
+    createTab.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
     
-    // Плавное скрытие формы создания
-    createTab.classList.add('hiding');
-    
-    animation.onfinish = () => {
+    // После завершения анимации перехода
+    setTimeout(() => {
         // Убираем элемент анимации
         transitionElement.remove();
         
         // Переключаем вкладки
-        createTab.classList.remove('active', 'hiding');
-        feedTab.classList.add('active', 'showing');
+        createTab.classList.remove('active');
+        createTab.style.transform = '';
+        createTab.style.opacity = '';
+        createTab.style.transition = '';
+        
+        feedTab.classList.add('active');
+        feedTab.style.transform = 'translateX(0)';
+        feedTab.style.opacity = '1';
+        feedTab.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
         
         createBtn.classList.remove('active');
         feedBtn.classList.add('active');
@@ -294,31 +323,37 @@ function animateToFeed() {
             // После загрузки подсвечиваем новое объявление
             setTimeout(() => {
                 highlightNewListing();
-            }, 300);
+            }, 500);
         });
         
-        // Убираем класс showing после анимации
+        // Убираем трансформации после анимации
         setTimeout(() => {
-            feedTab.classList.remove('showing');
-        }, 500);
-    };
+            feedTab.style.transform = '';
+            feedTab.style.opacity = '';
+            feedTab.style.transition = '';
+        }, 600);
+    }, 400);
 }
 
-// Подсветка нового объявления
+// Подсветка нового объявления с улучшенной анимацией
 function highlightNewListing() {
     if (lastCreatedListingId) {
         const newListingElement = document.querySelector(`[onclick="showListingModal('${lastCreatedListingId}')"]`);
         if (newListingElement) {
             newListingElement.classList.add('new-listing');
-            newListingElement.scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'center' 
-            });
             
-            // Убираем подсветку через 3 секунды
+            // Плавная прокрутка к новому объявлению
+            setTimeout(() => {
+                newListingElement.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center' 
+                });
+            }, 300);
+            
+            // Убираем подсветку через 4 секунды
             setTimeout(() => {
                 newListingElement.classList.remove('new-listing');
-            }, 3000);
+            }, 4000);
         }
     }
 }
@@ -338,8 +373,9 @@ function showListings() {
         return;
     }
     
-    container.innerHTML = allListings.map(item => `
-        <div class="listing-card" onclick="showListingModal('${item.id}')">
+    container.innerHTML = allListings.map((item, index) => `
+        <div class="listing-card" onclick="showListingModal('${item.id}')" 
+             style="animation-delay: ${index * 0.1}s">
             <div class="listing-content">
                 <div class="listing-image ${getPhoneBrand(item.phoneModel)}">
                     📱<br>${item.phoneModel}
