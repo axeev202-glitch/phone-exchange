@@ -5,8 +5,5 @@
   "scripts": {
     "dev": "vercel dev",
     "start": "npx serve public"
-  },
-  "dependencies": {
-    "@vercel/node": "^2.0.0"
   }
 }
