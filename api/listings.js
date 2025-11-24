@@ -1,8 +1,8 @@
-// Временное хранилище (при перезапуске сервера данные очищаются)
+// Временное хранилище
 let listings = [];
 
-export default async function handler(req, res) {
-  // Разрешаем запросы от любого источника
+module.exports = async (req, res) => {
+  // Включаем CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,DELETE,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -13,13 +13,11 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
-      // Отдаем все активные объявления
       const activeListings = listings.filter(listing => listing.status === 'active');
       return res.json(activeListings);
     }
 
     if (req.method === 'POST') {
-      // Создаем новое объявление
       const newListing = {
         id: Date.now(),
         ...req.body,
@@ -31,7 +29,6 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'DELETE') {
-      // Удаляем объявление (помечаем как неактивное)
       const { id } = req.query;
       const listingIndex = listings.findIndex(l => l.id === parseInt(id));
       
@@ -44,6 +41,7 @@ export default async function handler(req, res) {
 
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (error) {
+    console.error('API Error:', error);
     return res.status(500).json({ error: 'Server error' });
   }
-}
+};
