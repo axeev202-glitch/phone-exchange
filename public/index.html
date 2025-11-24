@@ -13,7 +13,7 @@
     <div class="container">
         <!-- Шапка -->
         <header class="header">
-            <h1>📱 PhoneExchange</h1>
+            <h1>📱 AndroTrade</h1>
             <p>Безопасный обмен телефонами</p>
         </header>
 
@@ -105,6 +105,16 @@
                     <div class="form-group">
                         <label>Желаемый обмен *</label>
                         <input type="text" id="desired-phone" required placeholder="На что хотите поменять?">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Город *</label>
+                        <div class="city-selector">
+                            <input type="text" id="city-search" placeholder="🔍 Поиск города..." class="city-search-input">
+                            <div class="cities-list" id="cities-list">
+                                <!-- Список городов будет заполнен через JS -->
+                            </div>
+                        </div>
                     </div>
 
                     <button type="submit" class="btn btn-primary" id="submit-btn">

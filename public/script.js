@@ -15,6 +15,17 @@ let currentUser = null;
 let allListings = [];
 let lastCreatedListingId = null;
 let currentTab = 'feed';
+let selectedCity = '';
+
+// Список городов (можно расширить)
+const cities = [
+    'Москва', 'Санкт-Петербург', 'Новосибирск', 'Екатеринбург', 'Казань',
+    'Нижний Новгород', 'Челябинск', 'Самара', 'Омск', 'Ростов-на-Дону',
+    'Уфа', 'Красноярск', 'Воронеж', 'Пермь', 'Волгоград',
+    'Краснодар', 'Саратов', 'Тюмень', 'Тольятти', 'Ижевск',
+    'Барнаул', 'Ульяновск', 'Иркутск', 'Хабаровск', 'Ярославль',
+    'Владивосток', 'Махачкала', 'Томск', 'Оренбург', 'Кемерово'
+];
 
 // Инициализация
 document.addEventListener('DOMContentLoaded', function() {
@@ -49,6 +60,9 @@ function initApp() {
     // Обновляем профиль
     updateProfile();
     
+    // Инициализируем выбор города
+    initCitySelector();
+    
     // Загружаем объявления
     loadListings();
     
@@ -74,6 +88,60 @@ function updateProfile() {
             userUsernameElement.textContent = currentUser.username ? `@${currentUser.username}` : '';
         }
     }
+}
+
+function initCitySelector() {
+    const citySearch = document.getElementById('city-search');
+    const citiesList = document.getElementById('cities-list');
+    
+    if (!citySearch || !citiesList) return;
+    
+    // Заполняем список городов
+    citiesList.innerHTML = cities.map(city => 
+        `<div class="city-item" data-city="${city}">${city}</div>`
+    ).join('');
+    
+    // Обработчик ввода в поиск
+    citySearch.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        const filteredCities = cities.filter(city => 
+            city.toLowerCase().includes(searchTerm)
+        );
+        
+        citiesList.innerHTML = filteredCities.map(city => 
+            `<div class="city-item" data-city="${city}">${city}</div>`
+        ).join('');
+        
+        // Показываем/скрываем список
+        if (searchTerm.length > 0 && filteredCities.length > 0) {
+            citiesList.classList.add('active');
+        } else {
+            citiesList.classList.remove('active');
+        }
+    });
+    
+    // Обработчик выбора города
+    citiesList.addEventListener('click', function(e) {
+        if (e.target.classList.contains('city-item')) {
+            const city = e.target.dataset.city;
+            selectedCity = city;
+            citySearch.value = city;
+            citiesList.classList.remove('active');
+            
+            // Добавляем визуальное подтверждение выбора
+            e.target.classList.add('selected');
+            setTimeout(() => {
+                e.target.classList.remove('selected');
+            }, 1000);
+        }
+    });
+    
+    // Скрываем список при клике вне
+    document.addEventListener('click', function(e) {
+        if (!citySearch.contains(e.target) && !citiesList.contains(e.target)) {
+            citiesList.classList.remove('active');
+        }
+    });
 }
 
 function setupButtons() {
@@ -143,15 +211,16 @@ async function createListing() {
     const condition = document.getElementById('phone-condition')?.value;
     const description = document.getElementById('phone-description')?.value.trim();
     const desiredPhone = document.getElementById('desired-phone')?.value.trim();
+    const city = selectedCity || document.getElementById('city-search')?.value.trim();
     const submitBtn = document.getElementById('submit-btn');
     const btnText = submitBtn.querySelector('.btn-text');
     const btnLoading = submitBtn.querySelector('.btn-loading');
     
-    console.log('Form data:', { phoneModel, condition, description, desiredPhone });
+    console.log('Form data:', { phoneModel, condition, description, desiredPhone, city });
     
     // Валидация
-    if (!phoneModel || !condition || !desiredPhone) {
-        showError('Заполните обязательные поля: модель, состояние и желаемый обмен!');
+    if (!phoneModel || !condition || !desiredPhone || !city) {
+        showError('Заполните все обязательные поля!');
         return;
     }
     
@@ -165,7 +234,7 @@ async function createListing() {
         condition: condition,
         description: description || 'Нет описания',
         desiredPhone: desiredPhone,
-        location: 'Москва',
+        location: city,
         userId: currentUser?.id
     };
     
@@ -194,6 +263,7 @@ async function createListing() {
             
             // Очищаем форму
             document.getElementById('create-listing-form').reset();
+            selectedCity = '';
             
         } else {
             // Ошибка от API
@@ -220,7 +290,7 @@ async function animateSuccessAndTransition() {
     document.body.appendChild(successAnimation);
     
     // Ждем завершения анимации успеха
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 800));
     
     // Убираем анимацию успеха
     successAnimation.remove();
@@ -229,12 +299,11 @@ async function animateSuccessAndTransition() {
     animateToFeed();
 }
 
-// Анимация перехода к ленте с телефоном
+// Улучшенная анимация перехода к ленте
 function animateToFeed() {
     const createTab = document.getElementById('create');
     const feedTab = document.getElementById('feed');
     const feedBtn = document.querySelector('[data-tab="feed"]');
-    const createBtn = document.querySelector('[data-tab="create"]');
     
     // Создаем оверлей для перехода
     const transitionOverlay = document.createElement('div');
@@ -246,6 +315,9 @@ function animateToFeed() {
     phoneAnimation.className = 'phone-animation';
     phoneAnimation.innerHTML = '<div class="phone-icon">📱</div>';
     document.body.appendChild(phoneAnimation);
+    
+    // Создаем частицы
+    createParticles();
     
     // Получаем позицию кнопки ленты для анимации
     const feedBtnRect = feedBtn.getBoundingClientRect();
@@ -272,13 +344,46 @@ function animateToFeed() {
                 highlightNewListing();
             }, 300);
         });
-    }, 1200);
+    }, 1500);
+}
+
+// Создание частиц для анимации
+function createParticles() {
+    const particleCount = 12;
+    const centerX = window.innerWidth / 2;
+    const centerY = window.innerHeight / 2;
+    
+    for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        
+        // Случайный угол и расстояние
+        const angle = (i / particleCount) * Math.PI * 2;
+        const distance = 100 + Math.random() * 50;
+        const tx = Math.cos(angle) * distance;
+        const ty = Math.sin(angle) * distance;
+        
+        particle.style.left = centerX + 'px';
+        particle.style.top = centerY + 'px';
+        particle.style.setProperty('--tx', `${tx}px`);
+        particle.style.setProperty('--ty', `${ty}px`);
+        
+        // Случайная задержка
+        particle.style.animationDelay = (Math.random() * 0.3) + 's';
+        
+        document.body.appendChild(particle);
+        
+        // Удаляем частицу после анимации
+        setTimeout(() => {
+            particle.remove();
+        }, 1000);
+    }
 }
 
 // Подсветка нового объявления
 function highlightNewListing() {
     if (lastCreatedListingId) {
-        const newListingElement = document.querySelector(`[onclick="showListingModal('${lastCreatedListingId}')"]`);
+        const newListingElement = document.querySelector(`[data-listing-id="${lastCreatedListingId}"]`);
         if (newListingElement) {
             newListingElement.classList.add('new-listing');
             newListingElement.scrollIntoView({ 
@@ -378,7 +483,7 @@ function showListings() {
     }
     
     container.innerHTML = allListings.map((item, index) => `
-        <div class="listing-card" onclick="showListingModal('${item.id}')" style="animation-delay: ${index * 0.1}s">
+        <div class="listing-card" data-listing-id="${item.id}" onclick="showListingModal('${item.id}')" style="animation-delay: ${index * 0.1}s">
             <div class="listing-content">
                 <div class="listing-image ${getPhoneBrand(item.phoneModel)}">
                     📱<br>${item.phoneModel}
@@ -406,7 +511,7 @@ function showDemoListings() {
     if (!container) return;
     
     container.innerHTML = `
-        <div class="listing-card" onclick="showListingModal('demo1')" style="animation-delay: 0.1s">
+        <div class="listing-card" data-listing-id="demo1" onclick="showListingModal('demo1')" style="animation-delay: 0.1s">
             <div class="listing-content">
                 <div class="listing-image iphone">
                     📱<br>iPhone 14 Pro
@@ -425,7 +530,7 @@ function showDemoListings() {
                 </div>
             </div>
         </div>
-        <div class="listing-card" onclick="showListingModal('demo2')" style="animation-delay: 0.2s">
+        <div class="listing-card" data-listing-id="demo2" onclick="showListingModal('demo2')" style="animation-delay: 0.2s">
             <div class="listing-content">
                 <div class="listing-image samsung">
                     📱<br>Samsung S23
