@@ -13,11 +13,17 @@ console.log('API URL:', API_URL);
 // Глобальные переменные
 let currentUser = null;
 let allListings = [];
+let myListings = [];
+let activeExchanges = [];
 let lastCreatedListingId = null;
 let currentTab = 'feed';
 let selectedCity = '';
+let uploadedPhotos = [];
+let currentListingId = null;
+let listingToDelete = null;
+let currentMessageListing = null;
 
-// Список городов (можно расширить)
+// Список городов
 const cities = [
     'Москва', 'Санкт-Петербург', 'Новосибирск', 'Екатеринбург', 'Казань',
     'Нижний Новгород', 'Челябинск', 'Самара', 'Омск', 'Ростов-на-Дону',
@@ -25,6 +31,26 @@ const cities = [
     'Краснодар', 'Саратов', 'Тюмень', 'Тольятти', 'Ижевск',
     'Барнаул', 'Ульяновск', 'Иркутск', 'Хабаровск', 'Ярославль',
     'Владивосток', 'Махачкала', 'Томск', 'Оренбург', 'Кемерово'
+];
+
+// Демо данные для активных сделок
+const demoExchanges = [
+    {
+        id: '1',
+        status: 'active',
+        myPhone: 'iPhone 14 Pro',
+        theirPhone: 'Samsung S23',
+        theirUser: '@samsung_lover',
+        timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+    },
+    {
+        id: '2',
+        status: 'pending',
+        myPhone: 'Xiaomi Redmi Note 10',
+        theirPhone: 'Google Pixel 6',
+        theirUser: '@pixel_fan',
+        timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
+    }
 ];
 
 // Инициализация
@@ -63,8 +89,17 @@ function initApp() {
     // Инициализируем выбор города
     initCitySelector();
     
+    // Инициализируем загрузку фото
+    initPhotoUpload();
+    
+    // Инициализируем поиск
+    initSearch();
+    
     // Загружаем объявления
     loadListings();
+    
+    // Загружаем активные сделки
+    loadActiveExchanges();
     
     // Настраиваем кнопки
     setupButtons();
@@ -144,6 +179,156 @@ function initCitySelector() {
     });
 }
 
+function initPhotoUpload() {
+    const uploadArea = document.getElementById('photo-upload-area');
+    const fileInput = document.getElementById('photo-upload');
+    const photoPreview = document.getElementById('photo-preview');
+    
+    if (!uploadArea || !fileInput) return;
+    
+    // Клик по области загрузки
+    uploadArea.addEventListener('click', function() {
+        fileInput.click();
+    });
+    
+    // Drag and drop
+    uploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+    });
+    
+    uploadArea.addEventListener('dragleave', function() {
+        uploadArea.classList.remove('dragover');
+    });
+    
+    uploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        const files = e.dataTransfer.files;
+        handleFiles(files);
+    });
+    
+    // Выбор файлов через input
+    fileInput.addEventListener('change', function(e) {
+        handleFiles(e.target.files);
+    });
+    
+    function handleFiles(files) {
+        const validFiles = Array.from(files).filter(file => 
+            file.type.startsWith('image/') && 
+            uploadedPhotos.length + Array.from(files).length <= 5
+        );
+        
+        if (validFiles.length === 0) {
+            showError('Пожалуйста, выберите только изображения (максимум 5)');
+            return;
+        }
+        
+        validFiles.forEach(file => {
+            if (uploadedPhotos.length >= 5) {
+                showError('Максимум 5 фотографий');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const photoData = {
+                    id: Date.now() + Math.random(),
+                    data: e.target.result,
+                    file: file
+                };
+                uploadedPhotos.push(photoData);
+                updatePhotoPreview();
+            };
+            reader.readAsDataURL(file);
+        });
+        
+        // Сбрасываем input
+        fileInput.value = '';
+    }
+    
+    function updatePhotoPreview() {
+        if (!photoPreview) return;
+        
+        photoPreview.innerHTML = uploadedPhotos.map(photo => `
+            <div class="photo-preview-item">
+                <img src="${photo.data}" alt="Preview">
+                <button class="remove-photo" onclick="removePhoto('${photo.id}')">×</button>
+            </div>
+        `).join('');
+        
+        // Обновляем текст в области загрузки
+        const uploadPlaceholder = uploadArea.querySelector('.upload-placeholder');
+        if (uploadPlaceholder) {
+            if (uploadedPhotos.length > 0) {
+                uploadPlaceholder.innerHTML = `
+                    <span class="upload-icon">📷</span>
+                    <p>Добавить еще фото</p>
+                    <small>Осталось ${5 - uploadedPhotos.length} из 5</small>
+                `;
+            } else {
+                uploadPlaceholder.innerHTML = `
+                    <span class="upload-icon">📷</span>
+                    <p>Добавьте фото телефона</p>
+                    <small>Максимум 5 фото</small>
+                `;
+            }
+        }
+    }
+}
+
+function removePhoto(photoId) {
+    uploadedPhotos = uploadedPhotos.filter(photo => photo.id !== photoId);
+    updatePhotoPreview();
+}
+
+function initSearch() {
+    const searchInput = document.getElementById('search-input');
+    if (!searchInput) return;
+    
+    let searchTimeout;
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            const searchTerm = this.value.toLowerCase().trim();
+            filterListings(searchTerm);
+        }, 300);
+    });
+}
+
+function filterListings(searchTerm) {
+    const container = document.getElementById('feed-listings');
+    if (!container) return;
+    
+    let filteredListings = allListings;
+    
+    if (searchTerm) {
+        filteredListings = allListings.filter(listing => 
+            listing.phoneModel.toLowerCase().includes(searchTerm) ||
+            listing.desiredPhone.toLowerCase().includes(searchTerm) ||
+            listing.description.toLowerCase().includes(searchTerm) ||
+            listing.location.toLowerCase().includes(searchTerm)
+        );
+    }
+    
+    showListings(filteredListings, container);
+    
+    // Показываем информацию о результатах поиска
+    const searchInfo = document.querySelector('.search-results-info');
+    if (searchTerm && filteredListings.length === 0) {
+        if (!searchInfo) {
+            const infoElement = document.createElement('div');
+            infoElement.className = 'search-results-info';
+            infoElement.textContent = `По запросу "${searchTerm}" ничего не найдено`;
+            container.parentNode.insertBefore(infoElement, container);
+        } else {
+            searchInfo.textContent = `По запросу "${searchTerm}" ничего не найдено`;
+        }
+    } else if (searchInfo) {
+        searchInfo.remove();
+    }
+}
+
 function setupButtons() {
     // Навигация
     document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -194,6 +379,7 @@ async function loadListings() {
         console.log('Loaded listings:', data);
         
         allListings = Array.isArray(data) ? data : [];
+        updateMyListings();
         showListings();
         
     } catch (error) {
@@ -201,6 +387,34 @@ async function loadListings() {
         showError('Не удалось загрузить объявления. Показываем демо данные.');
         showDemoListings();
     }
+}
+
+// Загрузка активных сделок
+function loadActiveExchanges() {
+    // В реальном приложении здесь был бы запрос к API
+    activeExchanges = demoExchanges;
+    showActiveExchanges();
+}
+
+// Обновление моих объявлений
+function updateMyListings() {
+    if (!currentUser) return;
+    
+    myListings = allListings.filter(listing => listing.userId === currentUser.id);
+    
+    // Обновляем счетчик
+    const countElement = document.getElementById('active-listings');
+    if (countElement) {
+        countElement.textContent = myListings.length;
+    }
+    
+    const completedElement = document.getElementById('completed-exchanges');
+    if (completedElement) {
+        completedElement.textContent = activeExchanges.filter(e => e.status === 'completed').length;
+    }
+    
+    // Показываем мои объявления если секция видима
+    showMyListings();
 }
 
 // Создание объявления
@@ -235,7 +449,12 @@ async function createListing() {
         description: description || 'Нет описания',
         desiredPhone: desiredPhone,
         location: city,
-        userId: currentUser?.id
+        userId: currentUser?.id,
+        userInfo: {
+            name: currentUser?.name,
+            username: currentUser?.username
+        },
+        photos: uploadedPhotos.map(photo => photo.data) // В реальном приложении нужно загружать на сервер
     };
     
     console.log('Sending data to API:', listingData);
@@ -264,6 +483,8 @@ async function createListing() {
             // Очищаем форму
             document.getElementById('create-listing-form').reset();
             selectedCity = '';
+            uploadedPhotos = [];
+            updatePhotoPreview();
             
         } else {
             // Ошибка от API
@@ -438,9 +659,11 @@ function animateTabTransition(fromTab, toTab) {
             toElement.classList.remove('entering');
         }, 500);
         
-        // Обновляем ленту при переходе
+        // Обновляем контент при переходе
         if (toTab === 'feed') {
             setTimeout(() => loadListings(), 100);
+        } else if (toTab === 'exchanges') {
+            setTimeout(() => showActiveExchanges(), 100);
         }
     }, 400);
 }
@@ -467,12 +690,11 @@ function switchTab(tabName) {
     currentTab = tabName;
 }
 
-// Показ объявлений
-function showListings() {
-    const container = document.querySelector('.listings-container');
+// Показ объявлений в ленте
+function showListings(listings = allListings, container = document.getElementById('feed-listings')) {
     if (!container) return;
     
-    if (allListings.length === 0) {
+    if (listings.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
                 <h3>📱 Пока нет объявлений</h3>
@@ -482,11 +704,14 @@ function showListings() {
         return;
     }
     
-    container.innerHTML = allListings.map((item, index) => `
+    container.innerHTML = listings.map((item, index) => `
         <div class="listing-card" data-listing-id="${item.id}" onclick="showListingModal('${item.id}')" style="animation-delay: ${index * 0.1}s">
             <div class="listing-content">
                 <div class="listing-image ${getPhoneBrand(item.phoneModel)}">
-                    📱<br>${item.phoneModel}
+                    ${item.photos && item.photos.length > 0 ? 
+                        `<img src="${item.photos[0]}" alt="${item.phoneModel}" style="width:100%;height:100%;object-fit:cover;border-radius:18px;">` : 
+                        `📱<br>${item.phoneModel}`
+                    }
                 </div>
                 <div class="listing-details">
                     <div class="listing-title">${item.phoneModel}</div>
@@ -496,6 +721,7 @@ function showListings() {
                     <div class="listing-meta">
                         <div class="user-info">
                             <span class="rating">⭐ 5.0</span>
+                            <span class="user-name">${item.userInfo?.name || 'Аноним'}</span>
                         </div>
                         <div class="timestamp">${formatTime(item.timestamp)}</div>
                     </div>
@@ -505,51 +731,165 @@ function showListings() {
     `).join('');
 }
 
-// Демо данные при ошибке загрузки
-function showDemoListings() {
-    const container = document.querySelector('.listings-container');
+// Показ моих объявлений в профиле
+function showMyListings() {
+    const container = document.getElementById('my-listings-container');
+    const section = document.getElementById('my-listings-section');
+    
+    if (!container || !section) return;
+    
+    if (myListings.length === 0) {
+        container.innerHTML = `
+            <div class="empty-listings">
+                <div class="empty-icon">📱</div>
+                <h3>У вас пока нет объявлений</h3>
+                <p>Создайте первое объявление!</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = myListings.map((item, index) => `
+        <div class="listing-card" data-listing-id="${item.id}" style="animation-delay: ${index * 0.1}s">
+            <div class="listing-content">
+                <div class="listing-image ${getPhoneBrand(item.phoneModel)}">
+                    ${item.photos && item.photos.length > 0 ? 
+                        `<img src="${item.photos[0]}" alt="${item.phoneModel}" style="width:100%;height:100%;object-fit:cover;border-radius:18px;">` : 
+                        `📱<br>${item.phoneModel}`
+                    }
+                </div>
+                <div class="listing-details">
+                    <div class="listing-title">${item.phoneModel}</div>
+                    <div class="listing-description">${item.description}</div>
+                    <div class="listing-price">→ ${item.desiredPhone}</div>
+                    <div class="listing-location">📍 ${item.location}</div>
+                    <div class="listing-meta">
+                        <div class="timestamp">${formatTime(item.timestamp)}</div>
+                    </div>
+                    <div class="my-listing-actions">
+                        <button class="btn btn-secondary" onclick="editListing('${item.id}')">✏️ Редактировать</button>
+                        <button class="btn btn-danger" onclick="deleteListing('${item.id}')">🗑️ Удалить</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Показ активных сделок
+function showActiveExchanges() {
+    const container = document.getElementById('exchanges-list');
     if (!container) return;
     
-    container.innerHTML = `
-        <div class="listing-card" data-listing-id="demo1" onclick="showListingModal('demo1')" style="animation-delay: 0.1s">
-            <div class="listing-content">
-                <div class="listing-image iphone">
-                    📱<br>iPhone 14 Pro
-                </div>
-                <div class="listing-details">
-                    <div class="listing-title">iPhone 14 Pro</div>
-                    <div class="listing-description">Отличное состояние, батарея 95%</div>
-                    <div class="listing-price">→ Samsung S23</div>
-                    <div class="listing-location">📍 Москва</div>
-                    <div class="listing-meta">
-                        <div class="user-info">
-                            <span class="rating">⭐ 5.0</span>
-                        </div>
-                        <div class="timestamp">только что</div>
-                    </div>
+    if (activeExchanges.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <h3>🔄 Нет активных сделок</h3>
+                <p>Начните обмен с другим пользователем!</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = activeExchanges.map((exchange, index) => `
+        <div class="exchange-item" style="animation-delay: ${index * 0.1}s">
+            <div class="exchange-header">
+                <div class="exchange-title">Обмен #${exchange.id}</div>
+                <div class="exchange-status status-${exchange.status}">
+                    ${exchange.status === 'pending' ? 'Ожидание' : 
+                      exchange.status === 'active' ? 'Активна' : 'Завершена'}
                 </div>
             </div>
-        </div>
-        <div class="listing-card" data-listing-id="demo2" onclick="showListingModal('demo2')" style="animation-delay: 0.2s">
-            <div class="listing-content">
-                <div class="listing-image samsung">
-                    📱<br>Samsung S23
+            <div class="exchange-parties">
+                <div class="exchange-party">
+                    <div class="exchange-phone">${exchange.myPhone}</div>
+                    <div class="exchange-user">Вы</div>
                 </div>
-                <div class="listing-details">
-                    <div class="listing-title">Samsung Galaxy S23</div>
-                    <div class="listing-description">Новый, в коробке</div>
-                    <div class="listing-price">→ iPhone 15</div>
-                    <div class="listing-location">📍 Санкт-Петербург</div>
-                    <div class="listing-meta">
-                        <div class="user-info">
-                            <span class="rating">⭐ 4.8</span>
-                        </div>
-                        <div class="timestamp">2 часа назад</div>
-                    </div>
+                <div class="exchange-arrow">⇄</div>
+                <div class="exchange-party">
+                    <div class="exchange-phone">${exchange.theirPhone}</div>
+                    <div class="exchange-user">${exchange.theirUser}</div>
                 </div>
             </div>
+            <div class="exchange-meta">
+                <div class="timestamp">Начато: ${formatTime(exchange.timestamp)}</div>
+            </div>
+            <div class="exchange-actions">
+                ${exchange.status === 'pending' ? `
+                    <button class="btn btn-primary" onclick="acceptExchange('${exchange.id}')">✅ Принять</button>
+                    <button class="btn btn-secondary" onclick="declineExchange('${exchange.id}')">❌ Отклонить</button>
+                ` : exchange.status === 'active' ? `
+                    <button class="btn btn-primary" onclick="completeExchange('${exchange.id}')">✅ Завершить</button>
+                    <button class="btn btn-secondary" onclick="contactUser('${exchange.theirUser}')">💌 Написать</button>
+                ` : ''}
+            </div>
         </div>
-    `;
+    `).join('');
+}
+
+// Демо данные при ошибке загрузки
+function showDemoListings() {
+    const container = document.getElementById('feed-listings');
+    if (!container) return;
+    
+    const demoListings = [
+        {
+            id: 'demo1',
+            phoneModel: 'iPhone 14 Pro',
+            condition: 'excellent',
+            description: 'Отличное состояние, батарея 95%',
+            desiredPhone: 'Samsung S23',
+            location: 'Москва',
+            timestamp: new Date().toISOString(),
+            userId: 'demo_user_1',
+            userInfo: { name: 'Иван Петров', username: 'ivan_tech' }
+        },
+        {
+            id: 'demo2',
+            phoneModel: 'Samsung Galaxy S23',
+            condition: 'new',
+            description: 'Новый, в коробке, все чеки',
+            desiredPhone: 'iPhone 15',
+            location: 'Санкт-Петербург',
+            timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+            userId: 'demo_user_2',
+            userInfo: { name: 'Анна Сидорова', username: 'anna_mobile' }
+        }
+    ];
+    
+    allListings = demoListings;
+    showListings();
+}
+
+// Показать мои объявления в профиле
+function showMyListings() {
+    const section = document.getElementById('my-listings-section');
+    if (section) {
+        section.style.display = 'block';
+        // Перезагружаем список моих объявлений
+        updateMyListings();
+    }
+}
+
+// Скрыть мои объявления в профиле
+function hideMyListings() {
+    const section = document.getElementById('my-listings-section');
+    if (section) {
+        section.style.display = 'none';
+    }
+}
+
+// Переключиться на вкладку моих объявлений (для кнопки в профиле)
+function showMyListingsTab() {
+    showTab('profile');
+    setTimeout(() => {
+        showMyListings();
+    }, 500);
+}
+
+// Показать активные сделки
+function showActiveExchanges() {
+    showTab('exchanges');
 }
 
 // Уведомления
@@ -605,11 +945,75 @@ function editProfile() {
     showError('Редактирование профиля - скоро!');
 }
 
-function showMyListings() {
-    showError('Мои объявления - скоро!');
-    showTab('feed');
+function editListing(listingId) {
+    showError('Редактирование объявления - скоро!');
 }
 
+// Удаление объявления
+function deleteListing(listingId) {
+    listingToDelete = listingId;
+    document.getElementById('delete-modal').style.display = 'block';
+}
+
+function closeDeleteModal() {
+    document.getElementById('delete-modal').style.display = 'none';
+    listingToDelete = null;
+}
+
+async function confirmDelete() {
+    if (!listingToDelete) return;
+    
+    try {
+        // В реальном приложении здесь был бы DELETE запрос к API
+        allListings = allListings.filter(listing => listing.id !== listingToDelete);
+        
+        // Обновляем интерфейс
+        updateMyListings();
+        showListings();
+        
+        showSuccess('Объявление успешно удалено!');
+        closeDeleteModal();
+        
+    } catch (error) {
+        showError('Ошибка при удалении объявления');
+    }
+}
+
+// Функции для сделок
+function acceptExchange(exchangeId) {
+    const exchange = activeExchanges.find(e => e.id === exchangeId);
+    if (exchange) {
+        exchange.status = 'active';
+        showActiveExchanges();
+        showSuccess('Сделка принята!');
+    }
+}
+
+function declineExchange(exchangeId) {
+    activeExchanges = activeExchanges.filter(e => e.id !== exchangeId);
+    showActiveExchanges();
+    showSuccess('Сделка отклонена');
+}
+
+function completeExchange(exchangeId) {
+    const exchange = activeExchanges.find(e => e.id === exchangeId);
+    if (exchange) {
+        exchange.status = 'completed';
+        showActiveExchanges();
+        showSuccess('Сделка завершена!');
+        updateMyListings();
+    }
+}
+
+function contactUser(username) {
+    if (tg && tg.openTelegramLink) {
+        tg.openTelegramLink(`https://t.me/${username.replace('@', '')}`);
+    } else {
+        showError(`Напишите пользователю: ${username}`);
+    }
+}
+
+// Модальное окно объявления
 function showListingModal(listingId) {
     const listing = allListings.find(item => item.id === listingId);
     if (!listing) return;
@@ -617,20 +1021,49 @@ function showListingModal(listingId) {
     const modalContent = document.getElementById('modal-listing-content');
     if (!modalContent) return;
     
+    // Сохраняем ID текущего объявления для сообщений
+    currentListingId = listingId;
+    currentMessageListing = listing;
+    
+    const photosHtml = listing.photos && listing.photos.length > 0 ? `
+        <div class="listing-gallery">
+            <div class="gallery-main">
+                <img src="${listing.photos[0]}" alt="${listing.phoneModel}">
+            </div>
+            ${listing.photos.length > 1 ? `
+                <div class="gallery-thumbs">
+                    ${listing.photos.map((photo, index) => `
+                        <div class="gallery-thumb ${index === 0 ? 'active' : ''}" onclick="changeMainPhoto(this, '${photo}')">
+                            <img src="${photo}" alt="${listing.phoneModel}">
+                        </div>
+                    `).join('')}
+                </div>
+            ` : ''}
+        </div>
+    ` : `
+        <div class="listing-image-large ${getPhoneBrand(listing.phoneModel)}">
+            📱<br>${listing.phoneModel}
+        </div>
+    `;
+    
     modalContent.innerHTML = `
         <div class="modal-header">
             <h3>${listing.phoneModel}</h3>
             <p class="listing-condition">${getConditionText(listing.condition)}</p>
         </div>
         <div class="modal-body">
-            <div class="listing-image-large ${getPhoneBrand(listing.phoneModel)}">
-                📱<br>${listing.phoneModel}
-            </div>
+            ${photosHtml}
             <div class="listing-details-modal">
                 <h4>Описание</h4>
                 <p>${listing.description}</p>
                 <h4>Желаемый обмен</h4>
                 <p class="desired-phone">${listing.desiredPhone}</p>
+                <div class="user-info-modal">
+                    <h4>Продавец</h4>
+                    <p><strong>${listing.userInfo?.name || 'Аноним'}</strong></p>
+                    ${listing.userInfo?.username ? `<p>@${listing.userInfo.username}</p>` : ''}
+                    <div class="rating">⭐ 5.0</div>
+                </div>
                 <div class="listing-info">
                     <span class="location">📍 ${listing.location}</span>
                     <span class="timestamp">${formatTime(listing.timestamp)}</span>
@@ -640,6 +1073,19 @@ function showListingModal(listingId) {
     `;
     
     document.getElementById('listing-modal').style.display = 'block';
+}
+
+function changeMainPhoto(thumbElement, photoUrl) {
+    const mainImage = document.querySelector('.gallery-main img');
+    if (mainImage) {
+        mainImage.src = photoUrl;
+    }
+    
+    // Обновляем активный класс
+    document.querySelectorAll('.gallery-thumb').forEach(thumb => {
+        thumb.classList.remove('active');
+    });
+    thumbElement.classList.add('active');
 }
 
 function getConditionText(condition) {
@@ -658,12 +1104,60 @@ function startExchange() {
 }
 
 function contactSeller() {
-    showError('Функция связи с продавцом скоро будет доступна!');
+    document.getElementById('listing-modal').style.display = 'none';
+    document.getElementById('message-modal').style.display = 'block';
+}
+
+function closeMessageModal() {
+    document.getElementById('message-modal').style.display = 'none';
+    currentMessageListing = null;
+}
+
+function sendMessage() {
+    const messageText = document.getElementById('message-text').value.trim();
+    
+    if (!messageText) {
+        showError('Введите сообщение');
+        return;
+    }
+    
+    if (!currentMessageListing) {
+        showError('Ошибка: объявление не найдено');
+        return;
+    }
+    
+    // В реальном приложении здесь была бы отправка сообщения
+    const sellerUsername = currentMessageListing.userInfo?.username;
+    
+    if (sellerUsername && tg && tg.openTelegramLink) {
+        const telegramUrl = `https://t.me/${sellerUsername.replace('@', '')}`;
+        tg.openTelegramLink(telegramUrl);
+    } else {
+        showSuccess(`Сообщение отправлено продавцу: "${messageText}"`);
+    }
+    
+    // Очищаем форму и закрываем модальное окно
+    document.getElementById('message-text').value = '';
+    closeMessageModal();
 }
 
 function confirmExchange() {
     showSuccess('Обмен успешно начат! Ожидайте подтверждения.');
     document.getElementById('exchange-modal').style.display = 'none';
+    
+    // Добавляем демо сделку
+    if (currentMessageListing) {
+        const newExchange = {
+            id: Date.now().toString(),
+            status: 'pending',
+            myPhone: currentMessageListing.desiredPhone,
+            theirPhone: currentMessageListing.phoneModel,
+            theirUser: currentMessageListing.userInfo?.username || 'unknown',
+            timestamp: new Date().toISOString()
+        };
+        activeExchanges.unshift(newExchange);
+        showActiveExchanges();
+    }
 }
 
 // Закрытие модальных окон при клике вне контента

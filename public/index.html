@@ -13,7 +13,7 @@
     <div class="container">
         <!-- Шапка -->
         <header class="header">
-            <h1>📱 AndroTrade</h1>
+            <h1>📱 PhoneExchange</h1>
             <p>Безопасный обмен телефонами</p>
         </header>
 
@@ -33,7 +33,7 @@
             </button>
             <button class="nav-btn" data-tab="exchanges">
                 <span class="nav-icon">🔄</span>
-                <span class="nav-text">Обмены</span>
+                <span class="nav-text">Сделки</span>
             </button>
         </nav>
 
@@ -42,10 +42,10 @@
             <!-- Лента объявлений -->
             <div id="feed" class="tab-content active">
                 <div class="search-bar">
-                    <input type="text" placeholder="🔍 Поиск телефонов..." class="search-input">
+                    <input type="text" placeholder="🔍 Поиск телефонов..." class="search-input" id="search-input">
                 </div>
                 
-                <div class="listings-container">
+                <div class="listings-container" id="feed-listings">
                     <!-- Объявления будут добавляться через JS -->
                 </div>
             </div>
@@ -73,6 +73,18 @@
                 <div class="profile-actions">
                     <button class="btn btn-secondary" onclick="editProfile()">✏️ Редактировать профиль</button>
                     <button class="btn btn-secondary" onclick="showMyListings()">📱 Мои объявления</button>
+                    <button class="btn btn-secondary" onclick="showActiveExchanges()">🔄 Активные сделки</button>
+                </div>
+
+                <!-- Мои объявления в профиле -->
+                <div class="profile-section" id="my-listings-section" style="display: none;">
+                    <div class="section-header">
+                        <h3>📱 Мои объявления</h3>
+                        <button class="btn btn-small" onclick="hideMyListings()">✕</button>
+                    </div>
+                    <div class="listings-container" id="my-listings-container">
+                        <!-- Мои объявления будут добавляться через JS -->
+                    </div>
                 </div>
             </div>
 
@@ -80,6 +92,21 @@
             <div id="create" class="tab-content">
                 <form id="create-listing-form" class="listing-form">
                     <h3>📱 Новое объявление</h3>
+                    
+                    <div class="form-group">
+                        <label>Фотографии телефона</label>
+                        <div class="photo-upload-container">
+                            <div class="photo-upload-area" id="photo-upload-area">
+                                <input type="file" id="photo-upload" accept="image/*" multiple style="display: none;">
+                                <div class="upload-placeholder">
+                                    <span class="upload-icon">📷</span>
+                                    <p>Добавьте фото телефона</p>
+                                    <small>Максимум 5 фото</small>
+                                </div>
+                            </div>
+                            <div class="photo-preview" id="photo-preview"></div>
+                        </div>
+                    </div>
                     
                     <div class="form-group">
                         <label>Модель телефона *</label>
@@ -127,11 +154,13 @@
                 </form>
             </div>
 
-            <!-- Мои обмены -->
+            <!-- Активные сделки -->
             <div id="exchanges" class="tab-content">
                 <div class="exchanges-container">
-                    <h3>🔄 Мои обмены</h3>
-                    <p class="empty-state">У вас пока нет активных обменов</p>
+                    <h3>🔄 Активные сделки</h3>
+                    <div class="exchanges-list" id="exchanges-list">
+                        <!-- Активные сделки будут добавляться через JS -->
+                    </div>
                 </div>
             </div>
         </main>
@@ -163,6 +192,39 @@
                 <p>⏱️ Срок проведения: 1-3 дня</p>
             </div>
             <button class="btn btn-primary" onclick="confirmExchange()">✅ Подтвердить обмен</button>
+        </div>
+    </div>
+
+    <!-- Модальное окно сообщения -->
+    <div id="message-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>💌 Написать продавцу</h3>
+            <div class="message-form">
+                <div class="form-group">
+                    <label>Ваше сообщение</label>
+                    <textarea id="message-text" placeholder="Напишите сообщение продавцу..." rows="4"></textarea>
+                </div>
+                <div class="message-actions">
+                    <button class="btn btn-secondary" onclick="closeMessageModal()">Отмена</button>
+                    <button class="btn btn-primary" onclick="sendMessage()">📤 Отправить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно подтверждения удаления -->
+    <div id="delete-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>🗑️ Удалить объявление</h3>
+            <div class="delete-confirm">
+                <p>Вы уверены, что хотите удалить это объявление?</p>
+                <div class="delete-actions">
+                    <button class="btn btn-secondary" onclick="closeDeleteModal()">Отмена</button>
+                    <button class="btn btn-danger" onclick="confirmDelete()">✅ Удалить</button>
+                </div>
+            </div>
         </div>
     </div>
 
