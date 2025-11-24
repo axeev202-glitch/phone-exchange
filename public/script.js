@@ -1,10 +1,14 @@
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-// Используем относительный путь для API в продакшене
-const API_URL = window.location.hostname === 'localhost' 
-  ? 'http://localhost:3000/api' 
-  : '/api';
+// Определяем URL API в зависимости от среды
+const isLocalhost = window.location.hostname === 'localhost' || 
+                    window.location.hostname === '127.0.0.1';
+const API_URL = isLocalhost 
+  ? 'http://localhost:3000/api/listings' 
+  : 'https://' + window.location.hostname + '/api/listings';
+
+console.log('API URL:', API_URL);
 
 // Глобальные переменные
 let currentUser = null;
@@ -12,6 +16,7 @@ let allListings = [];
 
 // Инициализация
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing app...');
     initApp();
 });
 
@@ -28,17 +33,19 @@ function initApp() {
             username: tgUser.username,
             name: `${tgUser.first_name} ${tgUser.last_name || ''}`.trim()
         };
-        
-        // Обновляем профиль
-        updateProfile();
+        console.log('Telegram user:', currentUser);
     } else {
-        // Запасной вариант для тестирования
+        // Запасной вариант для тестирования вне Telegram
         currentUser = {
             id: 'test_user_' + Date.now(),
-            name: 'Telegram User',
-            username: 'telegram_user'
+            name: 'Test User',
+            username: 'test_user'
         };
+        console.log('Test user:', currentUser);
     }
+    
+    // Обновляем профиль
+    updateProfile();
     
     // Загружаем объявления
     loadListings();
@@ -46,14 +53,21 @@ function initApp() {
     // Настраиваем кнопки
     setupButtons();
     
-    // Показываем основное содержимое
+    // Показываем приложение
     document.body.style.opacity = '1';
 }
 
 function updateProfile() {
     if (currentUser) {
-        document.getElementById('user-name').textContent = currentUser.name;
-        document.getElementById('user-username').textContent = currentUser.username ? `@${currentUser.username}` : '';
+        const userNameElement = document.getElementById('user-name');
+        const userUsernameElement = document.getElementById('user-username');
+        
+        if (userNameElement) {
+            userNameElement.textContent = currentUser.name;
+        }
+        if (userUsernameElement) {
+            userUsernameElement.textContent = currentUser.username ? `@${currentUser.username}` : '';
+        }
     }
 }
 
@@ -66,11 +80,14 @@ function setupButtons() {
         });
     });
     
-    // Форма создания
-    document.getElementById('create-listing-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        createListing();
-    });
+    // Форма создания объявления
+    const createForm = document.getElementById('create-listing-form');
+    if (createForm) {
+        createForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            createListing();
+        });
+    }
     
     // Закрытие модальных окон
     document.querySelectorAll('.close').forEach(closeBtn => {
@@ -82,27 +99,103 @@ function setupButtons() {
 
 // Загрузка объявлений
 async function loadListings() {
+    console.log('Loading listings from:', API_URL);
+    
     try {
-        console.log('Loading listings from:', API_URL + '/listings');
-        const response = await fetch(API_URL + '/listings');
+        const response = await fetch(API_URL, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        console.log('Response status:', response.status);
         
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         
-        allListings = await response.json();
-        console.log('Loaded listings:', allListings);
+        const data = await response.json();
+        console.log('Loaded listings:', data);
+        
+        allListings = Array.isArray(data) ? data : [];
         showListings();
+        
     } catch (error) {
-        console.error('Ошибка загрузки:', error);
-        // Показываем демо данные при ошибке
+        console.error('Ошибка загрузки объявлений:', error);
+        showError('Не удалось загрузить объявления. Показываем демо данные.');
         showDemoListings();
+    }
+}
+
+// Создание объявления - ИСПРАВЛЕННАЯ ФУНКЦИЯ
+async function createListing() {
+    console.log('Starting to create listing...');
+    
+    const phoneModel = document.getElementById('phone-model')?.value.trim();
+    const condition = document.getElementById('phone-condition')?.value;
+    const description = document.getElementById('phone-description')?.value.trim();
+    const desiredPhone = document.getElementById('desired-phone')?.value.trim();
+    
+    console.log('Form data:', { phoneModel, condition, description, desiredPhone });
+    
+    // Валидация
+    if (!phoneModel || !condition || !desiredPhone) {
+        showError('Заполните обязательные поля: модель, состояние и желаемый обмен!');
+        return;
+    }
+    
+    const listingData = {
+        phoneModel: phoneModel,
+        condition: condition,
+        description: description || 'Нет описания',
+        desiredPhone: desiredPhone,
+        location: 'Москва',
+        userId: currentUser?.id
+    };
+    
+    console.log('Sending data to API:', listingData);
+    
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(listingData)
+        });
+        
+        console.log('API response status:', response.status);
+        
+        const result = await response.json();
+        console.log('API response data:', result);
+        
+        if (response.ok && result.success) {
+            // Успешное создание
+            showSuccess('✅ Объявление успешно создано!');
+            
+            // Очищаем форму
+            document.getElementById('create-listing-form').reset();
+            
+            // Переходим в ленту и обновляем
+            showTab('feed');
+            setTimeout(() => loadListings(), 500); // Даем время на обновление
+            
+        } else {
+            // Ошибка от API
+            throw new Error(result.error || 'Unknown API error');
+        }
+        
+    } catch (error) {
+        console.error('Ошибка при создании объявления:', error);
+        showError(`❌ Ошибка при создании объявления: ${error.message}`);
     }
 }
 
 // Показ объявлений
 function showListings() {
     const container = document.querySelector('.listings-container');
+    if (!container) return;
     
     if (allListings.length === 0) {
         container.innerHTML = `
@@ -115,7 +208,7 @@ function showListings() {
     }
     
     container.innerHTML = allListings.map(item => `
-        <div class="listing-card" onclick="showListingModal(${item.id})">
+        <div class="listing-card" onclick="showListingModal('${item.id}')">
             <div class="listing-content">
                 <div class="listing-image ${getPhoneBrand(item.phoneModel)}">
                     📱<br>${item.phoneModel}
@@ -137,9 +230,11 @@ function showListings() {
     `).join('');
 }
 
-// Демо данные для тестирования
+// Демо данные при ошибке загрузки
 function showDemoListings() {
     const container = document.querySelector('.listings-container');
+    if (!container) return;
+    
     container.innerHTML = `
         <div class="listing-card">
             <div class="listing-content">
@@ -160,75 +255,67 @@ function showDemoListings() {
                 </div>
             </div>
         </div>
+        <div class="listing-card">
+            <div class="listing-content">
+                <div class="listing-image samsung">
+                    📱<br>Samsung Galaxy S23
+                </div>
+                <div class="listing-details">
+                    <div class="listing-title">Samsung Galaxy S23</div>
+                    <div class="listing-description">Новый, в коробке</div>
+                    <div class="listing-price">Обмен на: iPhone 15</div>
+                    <div class="listing-location">📍 Санкт-Петербург</div>
+                    <div class="listing-meta">
+                        <div class="user-info">
+                            <span class="rating">⭐ 4.8</span>
+                        </div>
+                        <div class="timestamp">2 часа назад</div>
+                    </div>
+                </div>
+            </div>
+        </div>
     `;
 }
 
-// Создание объявления
-async function createListing() {
-    const phoneModel = document.getElementById('phone-model').value.trim();
-    const condition = document.getElementById('phone-condition').value;
-    const description = document.getElementById('phone-description').value.trim();
-    const desiredPhone = document.getElementById('desired-phone').value.trim();
-    
-    // Проверка
-    if (!phoneModel || !condition || !desiredPhone) {
-        showNotification('Заполните обязательные поля!', 'error');
-        return;
-    }
-    
-    const listingData = {
-        phoneModel: phoneModel,
-        condition: condition,
-        description: description || 'Нет описания',
-        desiredPhone: desiredPhone,
-        location: 'Москва',
-        userId: currentUser?.id
-    };
-    
-    console.log('Creating listing:', listingData);
-    
-    try {
-        const response = await fetch(API_URL + '/listings', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(listingData)
+// Уведомления
+function showSuccess(message) {
+    if (tg && tg.showPopup) {
+        tg.showPopup({
+            title: 'Успех',
+            message: message,
+            buttons: [{ type: 'ok' }]
         });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            // Очищаем форму
-            document.getElementById('create-listing-form').reset();
-            
-            // Показываем уведомление
-            showNotification('✅ Объявление создано!', 'success');
-            
-            // Переходим в ленту и обновляем
-            showTab('feed');
-            loadListings();
-        } else {
-            throw new Error(result.error);
-        }
-    } catch (error) {
-        console.error('Ошибка создания:', error);
-        showNotification('❌ Ошибка при создании объявления', 'error');
+    } else {
+        alert(message);
+    }
+}
+
+function showError(message) {
+    if (tg && tg.showPopup) {
+        tg.showPopup({
+            title: 'Ошибка',
+            message: message,
+            buttons: [{ type: 'ok' }]
+        });
+    } else {
+        alert(message);
     }
 }
 
 // Вспомогательные функции
 function getPhoneBrand(model) {
+    if (!model) return 'iphone';
     const lowerModel = model.toLowerCase();
     if (lowerModel.includes('iphone')) return 'iphone';
     if (lowerModel.includes('samsung')) return 'samsung';
-    if (lowerModel.includes('xiaomi')) return 'xiaomi';
+    if (lowerModel.includes('xiaomi') || lowerModel.includes('redmi')) return 'xiaomi';
     if (lowerModel.includes('pixel')) return 'google';
     if (lowerModel.includes('huawei')) return 'huawei';
     return 'iphone';
 }
 
 function formatTime(timestamp) {
+    if (!timestamp) return 'недавно';
     const date = new Date(timestamp);
     const now = new Date();
     const diff = now - date;
@@ -237,19 +324,6 @@ function formatTime(timestamp) {
     if (diff < 3600000) return `${Math.floor(diff / 60000)} мин назад`;
     if (diff < 86400000) return `${Math.floor(diff / 3600000)} ч назад`;
     return date.toLocaleDateString('ru-RU');
-}
-
-function showNotification(message, type = 'info') {
-    // Используем Telegram Web App уведомления если доступны
-    if (tg && tg.showPopup) {
-        tg.showPopup({
-            title: type === 'error' ? 'Ошибка' : 'Успех',
-            message: message,
-            buttons: [{ type: 'ok' }]
-        });
-    } else {
-        alert(message);
-    }
 }
 
 // Переключение вкладок
@@ -265,31 +339,35 @@ function showTab(tabName) {
     });
     
     // Показываем нужную вкладку
-    document.getElementById(tabName).classList.add('active');
-    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+    const targetTab = document.getElementById(tabName);
+    const targetBtn = document.querySelector(`[data-tab="${tabName}"]`);
     
-    // Если перешли в ленту - обновляем объявления
+    if (targetTab) targetTab.classList.add('active');
+    if (targetBtn) targetBtn.classList.add('active');
+    
+    // Обновляем ленту при переходе
     if (tabName === 'feed') {
-        loadListings();
+        setTimeout(() => loadListings(), 100);
     }
 }
 
-// Простые функции для кнопок
+// Остальные функции остаются без изменений...
 function editProfile() {
-    showNotification('Редактирование профиля - скоро!', 'info');
+    showError('Редактирование профиля - скоро!');
 }
 
 function showMyListings() {
-    showNotification('Мои объявления - скоро!', 'info');
+    showError('Мои объявления - скоро!');
     showTab('feed');
 }
 
-// Модальные окна
 function showListingModal(listingId) {
     const listing = allListings.find(item => item.id === listingId);
     if (!listing) return;
     
     const modalContent = document.getElementById('modal-listing-content');
+    if (!modalContent) return;
+    
     modalContent.innerHTML = `
         <div class="modal-header">
             <h3>${listing.phoneModel}</h3>
@@ -331,11 +409,11 @@ function startExchange() {
 }
 
 function contactSeller() {
-    showNotification('Функция связи с продавцом скоро будет доступна!', 'info');
+    showError('Функция связи с продавцом скоро будет доступна!');
 }
 
 function confirmExchange() {
-    showNotification('Обмен успешно начат! Ожидайте подтверждения.', 'success');
+    showSuccess('Обмен успешно начат! Ожидайте подтверждения.');
     document.getElementById('exchange-modal').style.display = 'none';
 }
 
