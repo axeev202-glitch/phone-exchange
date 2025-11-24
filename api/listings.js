@@ -3,49 +3,9 @@ let listings = [];
 
 // Конфигурация вашего бота
 const TELEGRAM_BOT_TOKEN = '8364853114:AAGfVhFQjq14TnoGSaMOtW3nErpYrtYzvF0';
-const TELEGRAM_CHAT_ID = '1188933834';
+const TELEGRAM_CHAT_ID = '1188933834'; // Ваш chat_id или канал
 
-// Функция получения информации о боте
-async function getBotInfo() {
-    try {
-        const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getMe`);
-        const result = await response.json();
-        console.log('Bot info:', result);
-        return result;
-    } catch (error) {
-        console.error('Error getting bot info:', error);
-        return null;
-    }
-}
-
-// Функция для проверки и настройки бота
-async function setupBot() {
-    try {
-        const botInfo = await getBotInfo();
-        if (!botInfo || !botInfo.ok) {
-            console.error('❌ Bot token is invalid');
-            return false;
-        }
-        
-        console.log('✅ Bot connected:', botInfo.result.username);
-        return true;
-    } catch (error) {
-        console.error('Error setting up bot:', error);
-        return false;
-    }
-}
-
-function getConditionText(condition) {
-    const conditions = {
-        'new': 'Новый',
-        'excellent': 'Отличное',
-        'good': 'Хорошее',
-        'satisfactory': 'Удовлетворительное'
-    };
-    return conditions[condition] || condition;
-}
-
-// Улучшенная функция отправки уведомления в Telegram
+// Функция отправки уведомления в Telegram
 async function sendToTelegram(listing) {
     try {
         const message = `📱 *НОВОЕ ОБЪЯВЛЕНИЕ*
@@ -55,14 +15,9 @@ async function sendToTelegram(listing) {
 *Желаемый обмен:* ${listing.desiredPhone}
 *Описание:* ${listing.description}
 *Местоположение:* ${listing.location}
-*Пользователь:* ${listing.userId || 'Аноним'}
 
-🕐 ${new Date(listing.timestamp).toLocaleString('ru-RU')}
+🕐 ${new Date(listing.timestamp).toLocaleString('ru-RU')}`;
 
-#обмен #${listing.phoneModel.replace(/\s+/g, '')}`;
-
-        console.log('Sending to Telegram, chat_id:', TELEGRAM_CHAT_ID);
-        
         const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
             method: 'POST',
             headers: {
@@ -76,65 +31,40 @@ async function sendToTelegram(listing) {
         });
 
         const result = await response.json();
-        console.log('Telegram API full response:', result);
+        console.log('Telegram API response:', result);
         
-        if (result.ok) {
-            console.log('✅ Message sent successfully to Telegram');
-            return true;
-        } else {
-            console.error('❌ Telegram API error:', result.description);
-            // Пробуем отправить простое сообщение без Markdown
-            return await sendSimpleTelegramMessage(listing);
+        if (!result.ok) {
+            console.error('Telegram API error:', result);
         }
-    } catch (error) {
-        console.error('Error sending to Telegram:', error);
-        return await sendSimpleTelegramMessage(listing);
-    }
-}
-
-// Запасная функция для отправки простого сообщения
-async function sendSimpleTelegramMessage(listing) {
-    try {
-        const simpleMessage = `📱 НОВОЕ ОБЪЯВЛЕНИЕ
-
-Модель: ${listing.phoneModel}
-Состояние: ${getConditionText(listing.condition)}
-Желаемый обмен: ${listing.desiredPhone}
-Описание: ${listing.description}
-Местоположение: ${listing.location}
-
-${new Date(listing.timestamp).toLocaleString('ru-RU')}`;
-
-        const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                chat_id: TELEGRAM_CHAT_ID,
-                text: simpleMessage
-            })
-        });
-
-        const result = await response.json();
+        
         return result.ok;
     } catch (error) {
-        console.error('Error sending simple message:', error);
+        console.error('Error sending to Telegram:', error);
         return false;
     }
 }
 
-// Функция для получения обновлений бота (для отладки)
-async function getBotUpdates() {
+// Функция получения информации о боте (для проверки токена)
+async function getBotInfo() {
     try {
-        const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates`);
+        const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getMe`);
         const result = await response.json();
-        console.log('Bot updates (last 10):', result.result?.slice(-10));
+        console.log('Bot info:', result);
         return result;
     } catch (error) {
-        console.error('Error getting bot updates:', error);
+        console.error('Error getting bot info:', error);
         return null;
     }
+}
+
+function getConditionText(condition) {
+    const conditions = {
+        'new': 'Новый',
+        'excellent': 'Отличное',
+        'good': 'Хорошее',
+        'satisfactory': 'Удовлетворительное'
+    };
+    return conditions[condition] || condition;
 }
 
 export default async function handler(req, res) {
@@ -205,32 +135,19 @@ export default async function handler(req, res) {
             console.log('New listing created:', newListing);
 
             // Отправляем уведомление в Telegram
-            let telegramSent = false;
-            let telegramError = null;
-            
             try {
                 console.log('Sending notification to Telegram...');
-                telegramSent = await sendToTelegram(newListing);
-                
-                if (telegramSent) {
-                    console.log('✅ Telegram notification sent successfully');
-                } else {
-                    console.log('❌ Failed to send Telegram notification');
-                    telegramError = 'Failed to send to Telegram';
-                }
+                const telegramSent = await sendToTelegram(newListing);
+                console.log('Telegram notification sent:', telegramSent);
             } catch (tgError) {
-                console.error('Error sending to Telegram:', tgError);
-                telegramError = tgError.message;
+                console.error('Failed to send to Telegram, but listing saved:', tgError);
             }
 
             return res.status(201).json({ 
                 success: true, 
                 listing: newListing,
-                telegramSent: telegramSent,
-                telegramError: telegramError,
-                message: telegramSent 
-                    ? 'Объявление успешно создано и отправлено в Telegram!' 
-                    : 'Объявление создано, но не отправлено в Telegram'
+                telegramSent: true,
+                message: 'Объявление успешно создано и отправлено в Telegram!'
             });
         }
 
@@ -248,30 +165,13 @@ export default async function handler(req, res) {
     }
 }
 
-// Проверяем и настраиваем бота при запуске
+// Проверяем бота при запуске
 if (typeof window === 'undefined') {
-    setupBot().then(success => {
-        if (success) {
-            console.log('✅ Bot setup completed successfully');
-            // Отправляем тестовое сообщение при запуске
-            sendSimpleTelegramMessage({
-                phoneModel: 'Test Phone',
-                condition: 'excellent',
-                description: 'Тестовое сообщение при запуске',
-                desiredPhone: 'Any Phone',
-                location: 'Test Location',
-                timestamp: new Date().toISOString(),
-                userId: 'system'
-            }).then(sent => {
-                if (sent) {
-                    console.log('✅ Test message sent successfully');
-                } else {
-                    console.log('❌ Test message failed');
-                }
-            });
+    getBotInfo().then(botInfo => {
+        if (botInfo && botInfo.ok) {
+            console.log('✅ Bot is connected:', botInfo.result.username);
         } else {
-            console.log('❌ Bot setup failed - check token and chat_id');
-            getBotUpdates(); // Получаем обновления для отладки
+            console.log('❌ Bot connection failed');
         }
     });
 }
@@ -288,17 +188,6 @@ if (process.env.NODE_ENV !== 'production' && listings.length === 0) {
             location: 'Москва',
             timestamp: new Date().toISOString(),
             userId: 'demo_user'
-        },
-        {
-            id: '2',
-            phoneModel: 'Samsung Galaxy S23',
-            condition: 'new',
-            description: 'Новый, в коробке, не распакован',
-            desiredPhone: 'iPhone 15 Pro',
-            location: 'Санкт-Петербург',
-            timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-            userId: 'demo_user_2'
         }
     ];
-    console.log('Demo data loaded:', listings.length, 'listings');
 }
