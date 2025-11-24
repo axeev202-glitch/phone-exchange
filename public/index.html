@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PhoneExchange - Обмен телефонами</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
@@ -28,11 +28,11 @@
             <!-- Лента объявлений -->
             <div id="feed" class="tab-content active">
                 <div class="search-bar">
-                    <input type="text" placeholder="🔍 Поиск телефонов..." class="search-input">
+                    <input type="text" placeholder="🔍 Поиск телефонов..." class="search-input" id="search-input">
                 </div>
                 
-                <div class="listings-container">
-                    <!-- Объявления будут добавляться через JS -->
+                <div class="listings-container" id="listings-container">
+                    <div class="loading">Загрузка объявлений...</div>
                 </div>
             </div>
 
@@ -59,6 +59,7 @@
                 <div class="profile-actions">
                     <button class="btn btn-secondary" onclick="editProfile()">✏️ Редактировать профиль</button>
                     <button class="btn btn-secondary" onclick="showMyListings()">📱 Мои объявления</button>
+                    <button class="btn btn-secondary" onclick="testTelegram()">🔧 Тест Telegram</button>
                 </div>
             </div>
 
@@ -93,7 +94,16 @@
                         <input type="text" id="desired-phone" required placeholder="На что хотите поменять?">
                     </div>
 
-                    <button type="submit" class="btn btn-primary">📤 Опубликовать объявление</button>
+                    <div class="form-group">
+                        <label>Местоположение</label>
+                        <input type="text" id="phone-location" placeholder="Город" value="Москва">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" id="submit-btn">
+                        📤 Опубликовать объявление
+                    </button>
+                    
+                    <div id="form-status" class="form-status"></div>
                 </form>
             </div>
 
@@ -135,6 +145,6 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="scripts.js"></script>
 </body>
 </html>
