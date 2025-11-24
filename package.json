@@ -1,17 +1,12 @@
 {
-  "functions": {
-    "api/*.js": {
-      "runtime": "edge"
-    }
+  "name": "phone-exchange",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev",
+    "start": "npx serve public"
   },
-  "headers": [
-    {
-      "source": "/api/(.*)",
-      "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "Access-Control-Allow-Methods", "value": "GET,POST,OPTIONS" },
-        { "key": "Access-Control-Allow-Headers", "value": "Content-Type" }
-      ]
-    }
-  ]
+  "dependencies": {
+    "@vercel/node": "^2.0.0"
+  }
 }
