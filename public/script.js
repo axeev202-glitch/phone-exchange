@@ -358,7 +358,7 @@ function highlightNewListing() {
     }
 }
 
-// Показ объявлений
+// Показ объявлений с улучшенной плавной анимацией
 function showListings() {
     const container = document.querySelector('.listings-container');
     if (!container) return;
@@ -373,9 +373,13 @@ function showListings() {
         return;
     }
     
-    container.innerHTML = allListings.map((item, index) => `
+    // Сохраняем текущую позицию скролла
+    const scrollPosition = container.scrollTop;
+    
+    // Создаем HTML для всех объявлений
+    const listingsHTML = allListings.map((item, index) => `
         <div class="listing-card" onclick="showListingModal('${item.id}')" 
-             style="animation-delay: ${index * 0.1}s">
+             style="opacity: 0; transform: translateY(20px);">
             <div class="listing-content">
                 <div class="listing-image ${getPhoneBrand(item.phoneModel)}">
                     📱<br>${item.phoneModel}
@@ -395,6 +399,22 @@ function showListings() {
             </div>
         </div>
     `).join('');
+    
+    // Устанавливаем HTML
+    container.innerHTML = listingsHTML;
+    
+    // Восстанавливаем позицию скролла
+    container.scrollTop = scrollPosition;
+    
+    // Плавно показываем все карточки с задержкой
+    const listingCards = container.querySelectorAll('.listing-card');
+    listingCards.forEach((card, index) => {
+        setTimeout(() => {
+            card.style.transition = 'all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 80); // Увеличил задержку для более плавного появления
+    });
 }
 
 // Демо данные при ошибке загрузки
@@ -442,6 +462,16 @@ function showDemoListings() {
             </div>
         </div>
     `;
+    
+    // Анимируем демо карточки
+    const demoCards = container.querySelectorAll('.listing-card');
+    demoCards.forEach((card, index) => {
+        setTimeout(() => {
+            card.style.transition = 'all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
 }
 
 // Уведомления
