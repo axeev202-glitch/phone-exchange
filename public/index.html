@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhoneExchange - Обмен телефонами</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Шапка -->
+        <header class="header">
+            <h1>📱 PhoneExchange</h1>
+            <p>Безопасный обмен телефонами</p>
+        </header>
+
+        <!-- Навигация -->
+        <nav class="nav">
+            <button class="nav-btn active" data-tab="feed">Лента</button>
+            <button class="nav-btn" data-tab="profile">Профиль</button>
+            <button class="nav-btn" data-tab="create">Добавить</button>
+            <button class="nav-btn" data-tab="exchanges">Обмены</button>
+        </nav>
+
+        <!-- Контент -->
+        <main class="main-content">
+            <!-- Лента объявлений -->
+            <div id="feed" class="tab-content active">
+                <div class="search-bar">
+                    <input type="text" placeholder="🔍 Поиск телефонов..." class="search-input">
+                </div>
+                
+                <div class="listings-container">
+                    <!-- Объявления будут добавляться через JS -->
+                </div>
+            </div>
+
+            <!-- Профиль -->
+            <div id="profile" class="tab-content">
+                <div class="profile-card">
+                    <div class="avatar">👤</div>
+                    <h3 id="user-name">Загрузка...</h3>
+                    <p id="user-username"></p>
+                    <div class="rating">⭐ 5.0</div>
+                    
+                    <div class="profile-stats">
+                        <div class="stat">
+                            <span class="stat-number" id="active-listings">0</span>
+                            <span class="stat-label">Активные</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number" id="completed-exchanges">0</span>
+                            <span class="stat-label">Обмены</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-actions">
+                    <button class="btn btn-secondary" onclick="editProfile()">✏️ Редактировать профиль</button>
+                    <button class="btn btn-secondary" onclick="showMyListings()">📱 Мои объявления</button>
+                </div>
+            </div>
+
+            <!-- Создание объявления -->
+            <div id="create" class="tab-content">
+                <form id="create-listing-form" class="listing-form">
+                    <h3>📱 Новое объявление</h3>
+                    
+                    <div class="form-group">
+                        <label>Модель телефона *</label>
+                        <input type="text" id="phone-model" required placeholder="Например: iPhone 14 Pro">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Состояние *</label>
+                        <select id="phone-condition" required>
+                            <option value="">Выберите состояние</option>
+                            <option value="new">Новый</option>
+                            <option value="excellent">Отличное</option>
+                            <option value="good">Хорошее</option>
+                            <option value="satisfactory">Удовлетворительное</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Описание</label>
+                        <textarea id="phone-description" placeholder="Опишите особенности, комплектацию..." rows="3"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Желаемый обмен *</label>
+                        <input type="text" id="desired-phone" required placeholder="На что хотите поменять?">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">📤 Опубликовать объявление</button>
+                </form>
+            </div>
+
+            <!-- Мои обмены -->
+            <div id="exchanges" class="tab-content">
+                <div class="exchanges-container">
+                    <h3>🔄 Мои обмены</h3>
+                    <p class="empty-state">У вас пока нет активных обменов</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Модальное окно объявления -->
+    <div id="listing-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="modal-listing-content">
+                <!-- Контент объявления -->
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-primary" onclick="startExchange()">🔄 Начать обмен</button>
+                <button class="btn btn-secondary" onclick="contactSeller()">💌 Написать продавцу</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно обмена -->
+    <div id="exchange-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>🔄 Оформление обмена</h3>
+            <div class="exchange-info">
+                <p>✅ Обмен будет проведен через гаранта</p>
+                <p>💰 Комиссия гаранта: 100 руб.</p>
+                <p>⏱️ Срок проведения: 1-3 дня</p>
+            </div>
+            <button class="btn btn-primary" onclick="confirmExchange()">✅ Подтвердить обмен</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
