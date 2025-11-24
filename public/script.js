@@ -217,110 +217,256 @@ async function animateSuccessAndTransition() {
     document.body.appendChild(successAnimation);
     
     // Ждем завершения анимации успеха
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 800));
     
     // Убираем анимацию успеха
     successAnimation.remove();
     
-    // Запускаем анимацию перехода
-    animateToFeed();
+    // Запускаем анимацию полета самолетика
+    await animatePaperPlaneFlight();
 }
 
-// Анимация перехода к ленте
-function animateToFeed() {
+// Анимация полета бумажного самолетика
+async function animatePaperPlaneFlight() {
+    const submitBtn = document.getElementById('submit-btn');
+    const feedBtn = document.querySelector('[data-tab="feed"]');
+    
+    // Получаем координаты кнопки отправки
+    const submitBtnRect = submitBtn.getBoundingClientRect();
+    const startX = submitBtnRect.left + submitBtnRect.width / 2;
+    const startY = submitBtnRect.top + submitBtnRect.height / 2;
+    
+    // Получаем координаты кнопки ленты
+    const feedBtnRect = feedBtn.getBoundingClientRect();
+    const endX = feedBtnRect.left + feedBtnRect.width / 2;
+    const endY = feedBtnRect.top + feedBtnRect.height / 2;
+    
+    // Создаем контейнер для самолетика
+    const planeContainer = document.createElement('div');
+    planeContainer.className = 'plane-container';
+    planeContainer.style.cssText = `
+        left: ${startX - 30}px;
+        top: ${startY - 30}px;
+    `;
+    
+    // Создаем самолетик
+    const paperPlane = document.createElement('div');
+    paperPlane.className = 'paper-plane';
+    paperPlane.innerHTML = '✈️';
+    paperPlane.style.cssText = `
+        transform: scale(0);
+        opacity: 0;
+    `;
+    
+    // Создаем след
+    const planeTrail = document.createElement('div');
+    planeTrail.className = 'plane-trail';
+    
+    planeContainer.appendChild(paperPlane);
+    planeContainer.appendChild(planeTrail);
+    document.body.appendChild(planeContainer);
+    
+    // Анимация появления и взлета
+    await new Promise(resolve => {
+        const takeOffAnimation = paperPlane.animate([
+            { transform: 'scale(0) rotate(0deg)', opacity: 0 },
+            { transform: 'scale(1.2) rotate(-10deg)', opacity: 1 },
+            { transform: 'scale(1) rotate(-45deg)', opacity: 1 }
+        ], {
+            duration: 600,
+            easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+        });
+        
+        takeOffAnimation.onfinish = resolve;
+    });
+    
+    // Добавляем плавающую анимацию
+    paperPlane.classList.add('float-animation');
+    
+    // Анимация полета к кнопке ленты
+    await new Promise(resolve => {
+        const flightDuration = 1200;
+        
+        // Анимация движения контейнера
+        const flightAnimation = planeContainer.animate([
+            { 
+                transform: `translate(0, 0)`,
+                opacity: 1
+            },
+            { 
+                transform: `translate(${endX - startX}px, ${endY - startY}px)`,
+                opacity: 1
+            }
+        ], {
+            duration: flightDuration,
+            easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+        });
+        
+        // Анимация следа
+        const trailAnimation = planeTrail.animate([
+            { opacity: 0, transform: 'scaleX(0) rotate(0deg)' },
+            { opacity: 1, transform: 'scaleX(1) rotate(0deg)' },
+            { opacity: 0, transform: 'scaleX(0) rotate(0deg)' }
+        ], {
+            duration: flightDuration / 2,
+            easing: 'ease-out'
+        });
+        
+        flightAnimation.onfinish = resolve;
+    });
+    
+    // Убираем плавающую анимацию
+    paperPlane.classList.remove('float-animation');
+    
+    // Анимация посадки
+    await new Promise(resolve => {
+        const landingAnimation = paperPlane.animate([
+            { transform: 'rotate(-45deg) scale(1)' },
+            { transform: 'rotate(0deg) scale(1.2)' },
+            { transform: 'rotate(0deg) scale(1)' }
+        ], {
+            duration: 400,
+            easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+        });
+        
+        landingAnimation.onfinish = resolve;
+    });
+    
+    // Создаем эффект риппла на кнопке ленты
+    createRippleEffect(feedBtn, endX - feedBtnRect.left, endY - feedBtnRect.top);
+    
+    // Ждем немного перед исчезновением
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    // Анимация исчезновения самолетика
+    await new Promise(resolve => {
+        const disappearAnimation = paperPlane.animate([
+            { transform: 'scale(1) rotate(0deg)', opacity: 1 },
+            { transform: 'scale(0.5) rotate(0deg)', opacity: 0 }
+        ], {
+            duration: 300,
+            easing: 'ease-in'
+        });
+        
+        disappearAnimation.onfinish = resolve;
+    });
+    
+    // Убираем самолетик
+    planeContainer.remove();
+    
+    // Переходим к следующей анимации
+    await animateTabTransition();
+}
+
+// Создание эффекта риппла
+function createRippleEffect(element, x, y) {
+    const ripple = document.createElement('div');
+    ripple.className = 'ripple-effect';
+    
+    const rect = element.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height);
+    
+    ripple.style.cssText = `
+        position: absolute;
+        width: ${size}px;
+        height: ${size}px;
+        left: ${x - size/2}px;
+        top: ${y - size/2}px;
+        background: rgba(0, 212, 170, 0.6);
+        border-radius: 50%;
+        z-index: 1;
+    `;
+    
+    element.style.position = 'relative';
+    element.appendChild(ripple);
+    
+    setTimeout(() => {
+        ripple.remove();
+        element.style.position = '';
+    }, 600);
+}
+
+// Анимация перехода между вкладками
+async function animateTabTransition() {
     const createTab = document.getElementById('create');
     const feedTab = document.getElementById('feed');
     const feedBtn = document.querySelector('[data-tab="feed"]');
     const createBtn = document.querySelector('[data-tab="create"]');
     
-    // Создаем элемент для анимации перехода
-    const transitionElement = document.createElement('div');
-    transitionElement.style.cssText = `
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        width: 100px;
-        height: 100px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-radius: 50%;
-        transform: translate(-50%, -50%) scale(0);
-        z-index: 10000;
-        pointer-events: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 2em;
-        color: white;
-        box-shadow: 0 0 50px rgba(102, 126, 234, 0.5);
-    `;
-    transitionElement.innerHTML = '📱';
-    document.body.appendChild(transitionElement);
-    
-    // Анимация расширения круга
-    const animation = transitionElement.animate([
-        { 
-            transform: 'translate(-50%, -50%) scale(0)',
-            opacity: 1
-        },
-        { 
-            transform: 'translate(-50%, -50%) scale(1.5)',
-            opacity: 0.8
-        },
-        { 
-            transform: 'translate(-50%, -50%) scale(4)',
-            opacity: 0
-        }
-    ], {
-        duration: 800,
-        easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
-    });
-    
     // Плавное скрытие формы создания
     createTab.classList.add('hiding');
     
-    animation.onfinish = () => {
-        // Убираем элемент анимации
-        transitionElement.remove();
-        
-        // Переключаем вкладки
-        createTab.classList.remove('active', 'hiding');
-        feedTab.classList.add('active', 'showing');
-        
-        createBtn.classList.remove('active');
-        feedBtn.classList.add('active');
-        
-        // Загружаем обновленные объявления
-        loadListings().then(() => {
-            // После загрузки подсвечиваем новое объявление
-            setTimeout(() => {
-                highlightNewListing();
-            }, 300);
-        });
-        
-        // Убираем класс showing после анимации
-        setTimeout(() => {
-            feedTab.classList.remove('showing');
-        }, 500);
-    };
+    // Ждем завершения анимации скрытия
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    // Переключаем вкладки
+    createTab.classList.remove('active', 'hiding');
+    feedTab.classList.add('active', 'showing');
+    
+    createBtn.classList.remove('active');
+    feedBtn.classList.add('active');
+    
+    // Загружаем обновленные объявления
+    await loadListings();
+    
+    // Анимация появления нового объявления
+    await animateNewListingAppearance();
+    
+    // Убираем класс showing после анимации
+    setTimeout(() => {
+        feedTab.classList.remove('showing');
+    }, 500);
 }
 
-// Подсветка нового объявления
-function highlightNewListing() {
-    if (lastCreatedListingId) {
-        const newListingElement = document.querySelector(`[onclick="showListingModal('${lastCreatedListingId}')"]`);
-        if (newListingElement) {
-            newListingElement.classList.add('new-listing');
-            newListingElement.scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'center' 
-            });
-            
-            // Убираем подсветку через 3 секунды
-            setTimeout(() => {
-                newListingElement.classList.remove('new-listing');
-            }, 3000);
-        }
-    }
+// Анимация появления нового объявления
+async function animateNewListingAppearance() {
+    if (!lastCreatedListingId) return;
+    
+    // Ждем немного для плавности
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    const newListingElement = document.querySelector(`[onclick="showListingModal('${lastCreatedListingId}')"]`);
+    if (!newListingElement) return;
+    
+    // Добавляем классы для анимации
+    newListingElement.classList.add('new-listing-highlight', 'new-listing-glow');
+    newListingElement.style.opacity = '0';
+    newListingElement.style.transform = 'translateY(20px)';
+    
+    // Прокручиваем к новому объявлению
+    newListingElement.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'center' 
+    });
+    
+    // Анимация появления
+    await new Promise(resolve => {
+        const appearAnimation = newListingElement.animate([
+            { 
+                opacity: 0,
+                transform: 'translateY(20px) scale(0.9)'
+            },
+            { 
+                opacity: 1,
+                transform: 'translateY(0px) scale(1)'
+            }
+        ], {
+            duration: 800,
+            easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+        });
+        
+        appearAnimation.onfinish = resolve;
+    });
+    
+    // Устанавливаем финальные стили
+    newListingElement.style.opacity = '';
+    newListingElement.style.transform = '';
+    
+    // Ждем завершения анимации подсветки
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    // Убираем классы анимации
+    newListingElement.classList.remove('new-listing-highlight', 'new-listing-glow');
 }
 
 // Показ объявлений
