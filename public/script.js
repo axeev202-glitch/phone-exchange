@@ -53,8 +53,11 @@ function initApp() {
     // Настраиваем кнопки
     setupButtons();
     
-    // Показываем приложение
-    document.body.style.opacity = '1';
+    // Показываем приложение с анимацией
+    setTimeout(() => {
+        document.body.style.opacity = '1';
+        document.body.style.transition = 'opacity 0.5s ease';
+    }, 100);
 }
 
 function updateProfile() {
@@ -128,7 +131,7 @@ async function loadListings() {
     }
 }
 
-// Создание объявления - ИСПРАВЛЕННАЯ ФУНКЦИЯ
+// Создание объявления
 async function createListing() {
     console.log('Starting to create listing...');
     
@@ -216,7 +219,7 @@ function showListings() {
                 <div class="listing-details">
                     <div class="listing-title">${item.phoneModel}</div>
                     <div class="listing-description">${item.description}</div>
-                    <div class="listing-price">Обмен на: ${item.desiredPhone}</div>
+                    <div class="listing-price">→ ${item.desiredPhone}</div>
                     <div class="listing-location">📍 ${item.location}</div>
                     <div class="listing-meta">
                         <div class="user-info">
@@ -236,7 +239,7 @@ function showDemoListings() {
     if (!container) return;
     
     container.innerHTML = `
-        <div class="listing-card">
+        <div class="listing-card" onclick="showListingModal('demo1')">
             <div class="listing-content">
                 <div class="listing-image iphone">
                     📱<br>iPhone 14 Pro
@@ -244,7 +247,7 @@ function showDemoListings() {
                 <div class="listing-details">
                     <div class="listing-title">iPhone 14 Pro</div>
                     <div class="listing-description">Отличное состояние, батарея 95%</div>
-                    <div class="listing-price">Обмен на: Samsung S23</div>
+                    <div class="listing-price">→ Samsung S23</div>
                     <div class="listing-location">📍 Москва</div>
                     <div class="listing-meta">
                         <div class="user-info">
@@ -255,15 +258,15 @@ function showDemoListings() {
                 </div>
             </div>
         </div>
-        <div class="listing-card">
+        <div class="listing-card" onclick="showListingModal('demo2')">
             <div class="listing-content">
                 <div class="listing-image samsung">
-                    📱<br>Samsung Galaxy S23
+                    📱<br>Samsung S23
                 </div>
                 <div class="listing-details">
                     <div class="listing-title">Samsung Galaxy S23</div>
                     <div class="listing-description">Новый, в коробке</div>
-                    <div class="listing-price">Обмен на: iPhone 15</div>
+                    <div class="listing-price">→ iPhone 15</div>
                     <div class="listing-location">📍 Санкт-Петербург</div>
                     <div class="listing-meta">
                         <div class="user-info">
@@ -351,7 +354,6 @@ function showTab(tabName) {
     }
 }
 
-// Остальные функции остаются без изменений...
 function editProfile() {
     showError('Редактирование профиля - скоро!');
 }
@@ -371,16 +373,16 @@ function showListingModal(listingId) {
     modalContent.innerHTML = `
         <div class="modal-header">
             <h3>${listing.phoneModel}</h3>
-            <p class="listing-condition">Состояние: ${getConditionText(listing.condition)}</p>
+            <p class="listing-condition">${getConditionText(listing.condition)}</p>
         </div>
         <div class="modal-body">
             <div class="listing-image-large ${getPhoneBrand(listing.phoneModel)}">
                 📱<br>${listing.phoneModel}
             </div>
             <div class="listing-details-modal">
-                <h4>Описание:</h4>
+                <h4>Описание</h4>
                 <p>${listing.description}</p>
-                <h4>Желаемый обмен:</h4>
+                <h4>Желаемый обмен</h4>
                 <p class="desired-phone">${listing.desiredPhone}</p>
                 <div class="listing-info">
                     <span class="location">📍 ${listing.location}</span>
@@ -425,4 +427,4 @@ window.onclick = function(event) {
             modal.style.display = 'none';
         }
     });
-    }
+}
