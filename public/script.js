@@ -3,7 +3,7 @@ const tg = window.Telegram.WebApp;
 tg.expand();
 
 // URL вашего Vercel приложения
-const API_URL = 'https://obmentech.vercel.app/api';
+const API_URL = 'https://phone-exchange.vercel.app/api';
 
 let appData = {
     user: null,
