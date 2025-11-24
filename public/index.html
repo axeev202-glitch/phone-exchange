@@ -95,7 +95,13 @@
                         <input type="text" id="desired-phone" required placeholder="На что хотите поменять?">
                     </div>
 
-                    <button type="submit" class="btn btn-primary">📤 Опубликовать объявление</button>
+                    <button type="submit" class="btn btn-primary" id="submit-btn">
+                        <span class="btn-text">📤 Опубликовать объявление</span>
+                        <div class="btn-loading" style="display: none;">
+                            <div class="loading-spinner"></div>
+                            <span>Публикация...</span>
+                        </div>
+                    </button>
                 </form>
             </div>
 

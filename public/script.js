@@ -13,6 +13,7 @@ console.log('API URL:', API_URL);
 // Глобальные переменные
 let currentUser = null;
 let allListings = [];
+let lastCreatedListingId = null;
 
 // Инициализация
 document.addEventListener('DOMContentLoaded', function() {
@@ -139,6 +140,9 @@ async function createListing() {
     const condition = document.getElementById('phone-condition')?.value;
     const description = document.getElementById('phone-description')?.value.trim();
     const desiredPhone = document.getElementById('desired-phone')?.value.trim();
+    const submitBtn = document.getElementById('submit-btn');
+    const btnText = submitBtn.querySelector('.btn-text');
+    const btnLoading = submitBtn.querySelector('.btn-loading');
     
     console.log('Form data:', { phoneModel, condition, description, desiredPhone });
     
@@ -147,6 +151,11 @@ async function createListing() {
         showError('Заполните обязательные поля: модель, состояние и желаемый обмен!');
         return;
     }
+    
+    // Показываем индикатор загрузки
+    btnText.style.display = 'none';
+    btnLoading.style.display = 'flex';
+    submitBtn.disabled = true;
     
     const listingData = {
         phoneModel: phoneModel,
@@ -174,15 +183,14 @@ async function createListing() {
         console.log('API response data:', result);
         
         if (response.ok && result.success) {
-            // Успешное создание
-            showSuccess('✅ Объявление успешно создано!');
+            // Сохраняем ID созданного объявления для подсветки
+            lastCreatedListingId = result.listing.id;
+            
+            // Запускаем анимацию успеха и перехода
+            await animateSuccessAndTransition();
             
             // Очищаем форму
             document.getElementById('create-listing-form').reset();
-            
-            // Переходим в ленту и обновляем
-            showTab('feed');
-            setTimeout(() => loadListings(), 500); // Даем время на обновление
             
         } else {
             // Ошибка от API
@@ -192,6 +200,126 @@ async function createListing() {
     } catch (error) {
         console.error('Ошибка при создании объявления:', error);
         showError(`❌ Ошибка при создании объявления: ${error.message}`);
+    } finally {
+        // Скрываем индикатор загрузки
+        btnText.style.display = 'block';
+        btnLoading.style.display = 'none';
+        submitBtn.disabled = false;
+    }
+}
+
+// Анимация успеха и перехода к ленте
+async function animateSuccessAndTransition() {
+    // Создаем анимацию успеха
+    const successAnimation = document.createElement('div');
+    successAnimation.className = 'success-animation';
+    successAnimation.innerHTML = '<div class="success-check">✅</div>';
+    document.body.appendChild(successAnimation);
+    
+    // Ждем завершения анимации успеха
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Убираем анимацию успеха
+    successAnimation.remove();
+    
+    // Запускаем анимацию перехода
+    animateToFeed();
+}
+
+// Анимация перехода к ленте
+function animateToFeed() {
+    const createTab = document.getElementById('create');
+    const feedTab = document.getElementById('feed');
+    const feedBtn = document.querySelector('[data-tab="feed"]');
+    const createBtn = document.querySelector('[data-tab="create"]');
+    
+    // Создаем элемент для анимации перехода
+    const transitionElement = document.createElement('div');
+    transitionElement.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        width: 100px;
+        height: 100px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 50%;
+        transform: translate(-50%, -50%) scale(0);
+        z-index: 10000;
+        pointer-events: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2em;
+        color: white;
+        box-shadow: 0 0 50px rgba(102, 126, 234, 0.5);
+    `;
+    transitionElement.innerHTML = '📱';
+    document.body.appendChild(transitionElement);
+    
+    // Анимация расширения круга
+    const animation = transitionElement.animate([
+        { 
+            transform: 'translate(-50%, -50%) scale(0)',
+            opacity: 1
+        },
+        { 
+            transform: 'translate(-50%, -50%) scale(1.5)',
+            opacity: 0.8
+        },
+        { 
+            transform: 'translate(-50%, -50%) scale(4)',
+            opacity: 0
+        }
+    ], {
+        duration: 800,
+        easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+    });
+    
+    // Плавное скрытие формы создания
+    createTab.classList.add('hiding');
+    
+    animation.onfinish = () => {
+        // Убираем элемент анимации
+        transitionElement.remove();
+        
+        // Переключаем вкладки
+        createTab.classList.remove('active', 'hiding');
+        feedTab.classList.add('active', 'showing');
+        
+        createBtn.classList.remove('active');
+        feedBtn.classList.add('active');
+        
+        // Загружаем обновленные объявления
+        loadListings().then(() => {
+            // После загрузки подсвечиваем новое объявление
+            setTimeout(() => {
+                highlightNewListing();
+            }, 300);
+        });
+        
+        // Убираем класс showing после анимации
+        setTimeout(() => {
+            feedTab.classList.remove('showing');
+        }, 500);
+    };
+}
+
+// Подсветка нового объявления
+function highlightNewListing() {
+    if (lastCreatedListingId) {
+        const newListingElement = document.querySelector(`[onclick="showListingModal('${lastCreatedListingId}')"]`);
+        if (newListingElement) {
+            newListingElement.classList.add('new-listing');
+            newListingElement.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'center' 
+            });
+            
+            // Убираем подсветку через 3 секунды
+            setTimeout(() => {
+                newListingElement.classList.remove('new-listing');
+            }, 3000);
+        }
     }
 }
 
@@ -333,7 +461,7 @@ function formatTime(timestamp) {
 function showTab(tabName) {
     // Скрываем все вкладки
     document.querySelectorAll('.tab-content').forEach(tab => {
-        tab.classList.remove('active');
+        tab.classList.remove('active', 'showing', 'hiding');
     });
     
     // Убираем активность у всех кнопок
@@ -345,7 +473,12 @@ function showTab(tabName) {
     const targetTab = document.getElementById(tabName);
     const targetBtn = document.querySelector(`[data-tab="${tabName}"]`);
     
-    if (targetTab) targetTab.classList.add('active');
+    if (targetTab) {
+        targetTab.classList.add('active', 'showing');
+        setTimeout(() => {
+            targetTab.classList.remove('showing');
+        }, 500);
+    }
     if (targetBtn) targetBtn.classList.add('active');
     
     // Обновляем ленту при переходе
