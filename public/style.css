@@ -71,7 +71,7 @@ body {
     color: var(--text-secondary);
 }
 
-/* Neumorphic Navigation */
+/* Enhanced Neumorphic Navigation */
 .nav {
     display: flex;
     background: var(--primary);
@@ -82,6 +82,7 @@ body {
         inset 2px 2px 5px var(--shadow-dark),
         inset -3px -3px 7px var(--shadow-light);
     position: relative;
+    overflow: hidden;
 }
 
 .nav-btn {
@@ -99,6 +100,26 @@ body {
     margin: 0 4px;
     text-transform: uppercase;
     letter-spacing: 0.3px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    overflow: hidden;
+}
+
+.nav-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.6s ease;
+}
+
+.nav-btn:hover::before {
+    left: 100%;
 }
 
 .nav-btn.active {
@@ -118,6 +139,22 @@ body {
         inset -2px -2px 3px var(--shadow-light);
 }
 
+.nav-icon {
+    font-size: 1.2em;
+    transition: var(--transition);
+    filter: drop-shadow(1px 1px 1px var(--shadow-dark));
+}
+
+.nav-btn.active .nav-icon {
+    transform: scale(1.2);
+    filter: drop-shadow(0 0 3px rgba(109, 93, 252, 0.3));
+}
+
+.nav-text {
+    font-size: 0.7em;
+    transition: var(--transition);
+}
+
 /* Main Content */
 .main-content {
     padding: 0;
@@ -127,13 +164,45 @@ body {
 .tab-content {
     display: none;
     min-height: calc(100vh - 180px);
-    opacity: 1;
-    transform: translateX(0);
+    opacity: 0;
+    transform: translateX(20px);
     transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .tab-content.active {
     display: block;
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.tab-content.entering {
+    animation: tabEnter 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.tab-content.leaving {
+    animation: tabLeave 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+@keyframes tabEnter {
+    0% {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes tabLeave {
+    0% {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
 }
 
 /* Neumorphic Search */
@@ -170,7 +239,7 @@ body {
     font-weight: 500;
 }
 
-/* Neumorphic Cards */
+/* Enhanced Neumorphic Cards */
 .listings-container {
     background: transparent;
     padding: 0 10px 20px;
@@ -188,6 +257,19 @@ body {
         8px 8px 16px var(--shadow-dark),
         -8px -8px 16px var(--shadow-light);
     border: none;
+    animation: cardAppear 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    transform-origin: center top;
+}
+
+@keyframes cardAppear {
+    0% {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 .listing-card:hover {
@@ -198,7 +280,7 @@ body {
 }
 
 .listing-card.new-listing {
-    animation: neumorphPulse 2s ease-in-out;
+    animation: neumorphPulse 2s ease-in-out, cardAppear 0.6s ease;
     position: relative;
 }
 
@@ -211,6 +293,12 @@ body {
     height: 3px;
     background: linear-gradient(90deg, var(--accent), var(--accent-light));
     z-index: 2;
+    animation: shimmer 2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 1; }
 }
 
 .listing-card.new-listing::after {
@@ -228,6 +316,12 @@ body {
     box-shadow: 
         3px 3px 6px var(--shadow-dark),
         -3px -3px 6px var(--shadow-light);
+    animation: badgePulse 1.5s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
 }
 
 .listing-content {
@@ -255,6 +349,11 @@ body {
     box-shadow: 
         5px 5px 10px var(--shadow-dark),
         -5px -5px 10px var(--shadow-light);
+    transition: var(--transition);
+}
+
+.listing-card:hover .listing-image {
+    transform: scale(1.05) rotate(2deg);
 }
 
 .listing-image::after {
@@ -374,6 +473,7 @@ body {
     box-shadow: 
         8px 8px 16px var(--shadow-dark),
         -8px -8px 16px var(--shadow-light);
+    animation: cardAppear 0.6s ease;
 }
 
 .avatar {
@@ -393,6 +493,12 @@ body {
         inset 3px 3px 6px rgba(255,255,255,0.2),
         inset -3px -3px 6px rgba(0,0,0,0.1);
     position: relative;
+    animation: avatarFloat 3s ease-in-out infinite;
+}
+
+@keyframes avatarFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
 }
 
 .profile-card h3 {
@@ -484,6 +590,18 @@ body {
 .listing-form {
     background: transparent;
     padding: 25px 20px;
+    animation: formAppear 0.6s ease;
+}
+
+@keyframes formAppear {
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .listing-form h3 {
@@ -500,7 +618,22 @@ body {
 .form-group {
     margin-bottom: 30px;
     position: relative;
+    animation: formGroupAppear 0.6s ease forwards;
+    opacity: 0;
+    transform: translateY(10px);
 }
+
+@keyframes formGroupAppear {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.form-group:nth-child(1) { animation-delay: 0.1s; }
+.form-group:nth-child(2) { animation-delay: 0.2s; }
+.form-group:nth-child(3) { animation-delay: 0.3s; }
+.form-group:nth-child(4) { animation-delay: 0.4s; }
 
 .form-group label {
     display: block;
@@ -553,7 +686,7 @@ body {
     background-size: 12px;
 }
 
-/* Neumorphic Buttons */
+/* Enhanced Neumorphic Buttons */
 .btn {
     padding: 18px 24px;
     border: none;
@@ -573,6 +706,16 @@ body {
         5px 5px 10px var(--shadow-dark),
         -5px -5px 10px var(--shadow-light);
     letter-spacing: 0.3px;
+    animation: buttonAppear 0.6s ease 0.5s forwards;
+    opacity: 0;
+    transform: translateY(10px);
+}
+
+@keyframes buttonAppear {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .btn::before {
@@ -657,7 +800,7 @@ body {
         -3px -3px 6px var(--shadow-light);
 }
 
-/* Neumorphic Modals */
+/* Enhanced Neumorphic Modals */
 .modal {
     display: none;
     position: fixed;
@@ -728,7 +871,7 @@ body {
         inset -2px -2px 4px var(--shadow-light);
 }
 
-/* Neumorphic Animations */
+/* Enhanced Neumorphic Animations */
 @keyframes neumorphFadeIn {
     from { 
         opacity: 0;
@@ -777,7 +920,7 @@ body {
     to { opacity: 1; }
 }
 
-/* Success Animation */
+/* Enhanced Success Animation */
 .success-animation {
     position: fixed;
     top: 50%;
@@ -816,6 +959,97 @@ body {
     100% {
         transform: translate(-50%, -50%) scale(1) rotate(0deg);
         opacity: 1;
+    }
+}
+
+/* Transition Animation */
+.transition-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--accent);
+    z-index: 9998;
+    transform: scaleX(0);
+    transform-origin: right;
+    animation: transitionSlide 0.8s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+
+@keyframes transitionSlide {
+    0% {
+        transform: scaleX(0);
+        transform-origin: right;
+    }
+    50% {
+        transform: scaleX(1);
+        transform-origin: right;
+    }
+    51% {
+        transform-origin: left;
+    }
+    100% {
+        transform: scaleX(0);
+        transform-origin: left;
+    }
+}
+
+/* Phone Animation */
+.phone-animation {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 9999;
+    pointer-events: none;
+}
+
+.phone-icon {
+    width: 100px;
+    height: 100px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-light));
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5em;
+    color: white;
+    animation: phoneFly 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+    box-shadow: 
+        0 0 0 0 rgba(109, 93, 252, 0.7),
+        0 0 0 0 rgba(109, 93, 252, 0.5),
+        0 0 0 0 rgba(109, 93, 252, 0.3);
+}
+
+@keyframes phoneFly {
+    0% {
+        transform: translate(-50%, -50%) scale(0.5) rotate(-180deg);
+        opacity: 0;
+        box-shadow: 
+            0 0 0 0 rgba(109, 93, 252, 0.7),
+            0 0 0 0 rgba(109, 93, 252, 0.5),
+            0 0 0 0 rgba(109, 93, 252, 0.3);
+    }
+    30% {
+        transform: translate(-50%, -50%) scale(1.1) rotate(-10deg);
+        opacity: 1;
+    }
+    50% {
+        box-shadow: 
+            0 0 0 50px rgba(109, 93, 252, 0.7),
+            0 0 0 100px rgba(109, 93, 252, 0.5),
+            0 0 0 150px rgba(109, 93, 252, 0.3);
+    }
+    70% {
+        transform: translate(-50%, -50%) scale(1) rotate(0deg);
+    }
+    100% {
+        transform: translate(var(--target-x, -50%), var(--target-y, -50%)) scale(0.3) rotate(180deg);
+        opacity: 0;
+        box-shadow: 
+            0 0 0 200px rgba(109, 93, 252, 0),
+            0 0 0 250px rgba(109, 93, 252, 0),
+            0 0 0 300px rgba(109, 93, 252, 0);
     }
 }
 

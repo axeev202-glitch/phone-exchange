@@ -14,6 +14,7 @@ console.log('API URL:', API_URL);
 let currentUser = null;
 let allListings = [];
 let lastCreatedListingId = null;
+let currentTab = 'feed';
 
 // Инициализация
 document.addEventListener('DOMContentLoaded', function() {
@@ -80,7 +81,9 @@ function setupButtons() {
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             const tab = this.dataset.tab;
-            showTab(tab);
+            if (tab !== currentTab) {
+                showTab(tab);
+            }
         });
     });
     
@@ -226,68 +229,41 @@ async function animateSuccessAndTransition() {
     animateToFeed();
 }
 
-// Анимация перехода к ленте
+// Анимация перехода к ленте с телефоном
 function animateToFeed() {
     const createTab = document.getElementById('create');
     const feedTab = document.getElementById('feed');
     const feedBtn = document.querySelector('[data-tab="feed"]');
     const createBtn = document.querySelector('[data-tab="create"]');
     
-    // Создаем элемент для анимации перехода
-    const transitionElement = document.createElement('div');
-    transitionElement.style.cssText = `
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        width: 100px;
-        height: 100px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-radius: 50%;
-        transform: translate(-50%, -50%) scale(0);
-        z-index: 10000;
-        pointer-events: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 2em;
-        color: white;
-        box-shadow: 0 0 50px rgba(102, 126, 234, 0.5);
-    `;
-    transitionElement.innerHTML = '📱';
-    document.body.appendChild(transitionElement);
+    // Создаем оверлей для перехода
+    const transitionOverlay = document.createElement('div');
+    transitionOverlay.className = 'transition-overlay';
+    document.body.appendChild(transitionOverlay);
     
-    // Анимация расширения круга
-    const animation = transitionElement.animate([
-        { 
-            transform: 'translate(-50%, -50%) scale(0)',
-            opacity: 1
-        },
-        { 
-            transform: 'translate(-50%, -50%) scale(1.5)',
-            opacity: 0.8
-        },
-        { 
-            transform: 'translate(-50%, -50%) scale(4)',
-            opacity: 0
-        }
-    ], {
-        duration: 800,
-        easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
-    });
+    // Создаем анимацию телефона
+    const phoneAnimation = document.createElement('div');
+    phoneAnimation.className = 'phone-animation';
+    phoneAnimation.innerHTML = '<div class="phone-icon">📱</div>';
+    document.body.appendChild(phoneAnimation);
     
-    // Плавное скрытие формы создания
-    createTab.classList.add('hiding');
+    // Получаем позицию кнопки ленты для анимации
+    const feedBtnRect = feedBtn.getBoundingClientRect();
+    const targetX = feedBtnRect.left + feedBtnRect.width / 2;
+    const targetY = feedBtnRect.top + feedBtnRect.height / 2;
     
-    animation.onfinish = () => {
-        // Убираем элемент анимации
-        transitionElement.remove();
+    // Устанавливаем целевые координаты для анимации
+    phoneAnimation.style.setProperty('--target-x', `${targetX}px`);
+    phoneAnimation.style.setProperty('--target-y', `${targetY}px`);
+    
+    // Ждем завершения анимации
+    setTimeout(() => {
+        // Убираем элементы анимации
+        transitionOverlay.remove();
+        phoneAnimation.remove();
         
         // Переключаем вкладки
-        createTab.classList.remove('active', 'hiding');
-        feedTab.classList.add('active', 'showing');
-        
-        createBtn.classList.remove('active');
-        feedBtn.classList.add('active');
+        switchTab('feed');
         
         // Загружаем обновленные объявления
         loadListings().then(() => {
@@ -296,12 +272,7 @@ function animateToFeed() {
                 highlightNewListing();
             }, 300);
         });
-        
-        // Убираем класс showing после анимации
-        setTimeout(() => {
-            feedTab.classList.remove('showing');
-        }, 500);
-    };
+    }, 1200);
 }
 
 // Подсветка нового объявления
@@ -323,6 +294,74 @@ function highlightNewListing() {
     }
 }
 
+// Переключение вкладок с анимацией
+function showTab(tabName) {
+    if (tabName === currentTab) return;
+    
+    const oldTab = currentTab;
+    currentTab = tabName;
+    
+    // Анимация перехода между вкладками
+    animateTabTransition(oldTab, tabName);
+}
+
+function animateTabTransition(fromTab, toTab) {
+    const fromElement = document.getElementById(fromTab);
+    const toElement = document.getElementById(toTab);
+    const fromBtn = document.querySelector(`[data-tab="${fromTab}"]`);
+    const toBtn = document.querySelector(`[data-tab="${toTab}"]`);
+    
+    if (!fromElement || !toElement) return;
+    
+    // Добавляем классы анимации
+    fromElement.classList.add('leaving');
+    toElement.classList.add('entering');
+    
+    // Убираем активность у кнопок
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Ждем завершения анимации выхода
+    setTimeout(() => {
+        fromElement.classList.remove('active', 'leaving');
+        toElement.classList.add('active');
+        toBtn.classList.add('active');
+        
+        // Убираем класс входа после завершения анимации
+        setTimeout(() => {
+            toElement.classList.remove('entering');
+        }, 500);
+        
+        // Обновляем ленту при переходе
+        if (toTab === 'feed') {
+            setTimeout(() => loadListings(), 100);
+        }
+    }, 400);
+}
+
+// Простая функция переключения вкладок (без анимации)
+function switchTab(tabName) {
+    // Скрываем все вкладки
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // Убираем активность у всех кнопок
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Показываем нужную вкладку
+    const targetTab = document.getElementById(tabName);
+    const targetBtn = document.querySelector(`[data-tab="${tabName}"]`);
+    
+    if (targetTab) targetTab.classList.add('active');
+    if (targetBtn) targetBtn.classList.add('active');
+    
+    currentTab = tabName;
+}
+
 // Показ объявлений
 function showListings() {
     const container = document.querySelector('.listings-container');
@@ -338,8 +377,8 @@ function showListings() {
         return;
     }
     
-    container.innerHTML = allListings.map(item => `
-        <div class="listing-card" onclick="showListingModal('${item.id}')">
+    container.innerHTML = allListings.map((item, index) => `
+        <div class="listing-card" onclick="showListingModal('${item.id}')" style="animation-delay: ${index * 0.1}s">
             <div class="listing-content">
                 <div class="listing-image ${getPhoneBrand(item.phoneModel)}">
                     📱<br>${item.phoneModel}
@@ -367,7 +406,7 @@ function showDemoListings() {
     if (!container) return;
     
     container.innerHTML = `
-        <div class="listing-card" onclick="showListingModal('demo1')">
+        <div class="listing-card" onclick="showListingModal('demo1')" style="animation-delay: 0.1s">
             <div class="listing-content">
                 <div class="listing-image iphone">
                     📱<br>iPhone 14 Pro
@@ -386,7 +425,7 @@ function showDemoListings() {
                 </div>
             </div>
         </div>
-        <div class="listing-card" onclick="showListingModal('demo2')">
+        <div class="listing-card" onclick="showListingModal('demo2')" style="animation-delay: 0.2s">
             <div class="listing-content">
                 <div class="listing-image samsung">
                     📱<br>Samsung S23
@@ -455,36 +494,6 @@ function formatTime(timestamp) {
     if (diff < 3600000) return `${Math.floor(diff / 60000)} мин назад`;
     if (diff < 86400000) return `${Math.floor(diff / 3600000)} ч назад`;
     return date.toLocaleDateString('ru-RU');
-}
-
-// Переключение вкладок
-function showTab(tabName) {
-    // Скрываем все вкладки
-    document.querySelectorAll('.tab-content').forEach(tab => {
-        tab.classList.remove('active', 'showing', 'hiding');
-    });
-    
-    // Убираем активность у всех кнопок
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    
-    // Показываем нужную вкладку
-    const targetTab = document.getElementById(tabName);
-    const targetBtn = document.querySelector(`[data-tab="${tabName}"]`);
-    
-    if (targetTab) {
-        targetTab.classList.add('active', 'showing');
-        setTimeout(() => {
-            targetTab.classList.remove('showing');
-        }, 500);
-    }
-    if (targetBtn) targetBtn.classList.add('active');
-    
-    // Обновляем ленту при переходе
-    if (tabName === 'feed') {
-        setTimeout(() => loadListings(), 100);
-    }
 }
 
 function editProfile() {
