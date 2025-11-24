@@ -1,15 +1,12 @@
-const tg = window.Telegram?.WebApp;
-if (tg) {
-    tg.expand();
-    tg.enableClosingConfirmation();
-}
+const tg = window.Telegram.WebApp;
+tg.expand();
 
-// Определяем URL API
+// Определяем URL API в зависимости от среды
 const isLocalhost = window.location.hostname === 'localhost' || 
                     window.location.hostname === '127.0.0.1';
 const API_URL = isLocalhost 
-    ? 'http://localhost:3000/api/listings' 
-    : '/api/listings';
+  ? 'http://localhost:3000/api/listings' 
+  : 'https://' + window.location.hostname + '/api/listings';
 
 console.log('API URL:', API_URL);
 
@@ -27,8 +24,8 @@ function initApp() {
     console.log('Initializing app...');
     
     // Получаем пользователя из Telegram
-    if (tg && tg.initDataUnsafe?.user) {
-        const tgUser = tg.initDataUnsafe.user;
+    const tgUser = tg.initDataUnsafe?.user;
+    if (tgUser) {
         currentUser = {
             id: tgUser.id.toString(),
             firstName: tgUser.first_name,
@@ -71,16 +68,7 @@ function updateProfile() {
         if (userUsernameElement) {
             userUsernameElement.textContent = currentUser.username ? `@${currentUser.username}` : '';
         }
-        
-        // Обновляем статистику
-        updateUserStats();
     }
-}
-
-function updateUserStats() {
-    const userListings = allListings.filter(item => item.userId === currentUser.id);
-    document.getElementById('active-listings').textContent = userListings.length;
-    document.getElementById('completed-exchanges').textContent = '0';
 }
 
 function setupButtons() {
@@ -101,14 +89,6 @@ function setupButtons() {
         });
     }
     
-    // Поиск
-    const searchInput = document.getElementById('search-input');
-    if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            filterListings(this.value);
-        });
-    }
-    
     // Закрытие модальных окон
     document.querySelectorAll('.close').forEach(closeBtn => {
         closeBtn.addEventListener('click', function() {
@@ -120,11 +100,6 @@ function setupButtons() {
 // Загрузка объявлений
 async function loadListings() {
     console.log('Loading listings from:', API_URL);
-    
-    const container = document.getElementById('listings-container');
-    if (container) {
-        container.innerHTML = '<div class="loading">Загрузка объявлений...</div>';
-    }
     
     try {
         const response = await fetch(API_URL, {
@@ -141,19 +116,19 @@ async function loadListings() {
         }
         
         const data = await response.json();
-        console.log('Loaded listings:', data.length);
+        console.log('Loaded listings:', data);
         
         allListings = Array.isArray(data) ? data : [];
         showListings();
         
     } catch (error) {
         console.error('Ошибка загрузки объявлений:', error);
-        showError('Не удалось загрузить объявления');
+        showError('Не удалось загрузить объявления. Показываем демо данные.');
         showDemoListings();
     }
 }
 
-// Создание объявления
+// Создание объявления - ИСПРАВЛЕННАЯ ФУНКЦИЯ
 async function createListing() {
     console.log('Starting to create listing...');
     
@@ -161,12 +136,8 @@ async function createListing() {
     const condition = document.getElementById('phone-condition')?.value;
     const description = document.getElementById('phone-description')?.value.trim();
     const desiredPhone = document.getElementById('desired-phone')?.value.trim();
-    const location = document.getElementById('phone-location')?.value.trim() || 'Москва';
     
-    const submitBtn = document.getElementById('submit-btn');
-    const statusDiv = document.getElementById('form-status');
-    
-    console.log('Form data:', { phoneModel, condition, description, desiredPhone, location });
+    console.log('Form data:', { phoneModel, condition, description, desiredPhone });
     
     // Валидация
     if (!phoneModel || !condition || !desiredPhone) {
@@ -179,24 +150,11 @@ async function createListing() {
         condition: condition,
         description: description || 'Нет описания',
         desiredPhone: desiredPhone,
-        location: location,
-        userId: currentUser?.id,
-        userInfo: {
-            name: currentUser?.name,
-            username: currentUser?.username
-        }
+        location: 'Москва',
+        userId: currentUser?.id
     };
     
-    // Блокируем кнопку
-    if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.textContent = '📤 Публикуем...';
-    }
-    
-    if (statusDiv) {
-        statusDiv.textContent = 'Публикуем объявление...';
-        statusDiv.className = 'form-status info';
-    }
+    console.log('Sending data to API:', listingData);
     
     try {
         const response = await fetch(API_URL, {
@@ -214,11 +172,6 @@ async function createListing() {
         
         if (response.ok && result.success) {
             // Успешное создание
-            if (statusDiv) {
-                statusDiv.textContent = result.message;
-                statusDiv.className = 'form-status success';
-            }
-            
             showSuccess('✅ Объявление успешно создано!');
             
             // Очищаем форму
@@ -226,7 +179,7 @@ async function createListing() {
             
             // Переходим в ленту и обновляем
             showTab('feed');
-            setTimeout(() => loadListings(), 1000);
+            setTimeout(() => loadListings(), 500); // Даем время на обновление
             
         } else {
             // Ошибка от API
@@ -235,29 +188,16 @@ async function createListing() {
         
     } catch (error) {
         console.error('Ошибка при создании объявления:', error);
-        const errorMsg = `❌ Ошибка при создании объявления: ${error.message}`;
-        
-        if (statusDiv) {
-            statusDiv.textContent = errorMsg;
-            statusDiv.className = 'form-status error';
-        }
-        
-        showError(errorMsg);
-    } finally {
-        // Разблокируем кнопку
-        if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.textContent = '📤 Опубликовать объявление';
-        }
+        showError(`❌ Ошибка при создании объявления: ${error.message}`);
     }
 }
 
 // Показ объявлений
-function showListings(listingsToShow = allListings) {
+function showListings() {
     const container = document.querySelector('.listings-container');
     if (!container) return;
     
-    if (listingsToShow.length === 0) {
+    if (allListings.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
                 <h3>📱 Пока нет объявлений</h3>
@@ -267,7 +207,7 @@ function showListings(listingsToShow = allListings) {
         return;
     }
     
-    container.innerHTML = listingsToShow.map(item => `
+    container.innerHTML = allListings.map(item => `
         <div class="listing-card" onclick="showListingModal('${item.id}')">
             <div class="listing-content">
                 <div class="listing-image ${getPhoneBrand(item.phoneModel)}">
@@ -275,14 +215,12 @@ function showListings(listingsToShow = allListings) {
                 </div>
                 <div class="listing-details">
                     <div class="listing-title">${item.phoneModel}</div>
-                    <div class="listing-condition">${getConditionText(item.condition)}</div>
                     <div class="listing-description">${item.description}</div>
                     <div class="listing-price">Обмен на: ${item.desiredPhone}</div>
                     <div class="listing-location">📍 ${item.location}</div>
                     <div class="listing-meta">
                         <div class="user-info">
                             <span class="rating">⭐ 5.0</span>
-                            ${item.userId === currentUser?.id ? '<span class="my-listing-badge">Мое</span>' : ''}
                         </div>
                         <div class="timestamp">${formatTime(item.timestamp)}</div>
                     </div>
@@ -292,37 +230,19 @@ function showListings(listingsToShow = allListings) {
     `).join('');
 }
 
-// Фильтрация объявлений
-function filterListings(searchText) {
-    if (!searchText) {
-        showListings();
-        return;
-    }
-    
-    const filtered = allListings.filter(item => 
-        item.phoneModel.toLowerCase().includes(searchText.toLowerCase()) ||
-        item.desiredPhone.toLowerCase().includes(searchText.toLowerCase()) ||
-        item.description.toLowerCase().includes(searchText.toLowerCase()) ||
-        item.location.toLowerCase().includes(searchText.toLowerCase())
-    );
-    
-    showListings(filtered);
-}
-
 // Демо данные при ошибке загрузки
 function showDemoListings() {
     const container = document.querySelector('.listings-container');
     if (!container) return;
     
     container.innerHTML = `
-        <div class="listing-card" onclick="showListingModal('demo1')">
+        <div class="listing-card">
             <div class="listing-content">
                 <div class="listing-image iphone">
                     📱<br>iPhone 14 Pro
                 </div>
                 <div class="listing-details">
                     <div class="listing-title">iPhone 14 Pro</div>
-                    <div class="listing-condition">Отличное</div>
                     <div class="listing-description">Отличное состояние, батарея 95%</div>
                     <div class="listing-price">Обмен на: Samsung S23</div>
                     <div class="listing-location">📍 Москва</div>
@@ -335,16 +255,15 @@ function showDemoListings() {
                 </div>
             </div>
         </div>
-        <div class="listing-card" onclick="showListingModal('demo2')">
+        <div class="listing-card">
             <div class="listing-content">
                 <div class="listing-image samsung">
                     📱<br>Samsung Galaxy S23
                 </div>
                 <div class="listing-details">
                     <div class="listing-title">Samsung Galaxy S23</div>
-                    <div class="listing-condition">Новый</div>
-                    <div class="listing-description">Новый, в коробке, не распакован</div>
-                    <div class="listing-price">Обмен на: iPhone 15 Pro</div>
+                    <div class="listing-description">Новый, в коробке</div>
+                    <div class="listing-price">Обмен на: iPhone 15</div>
                     <div class="listing-location">📍 Санкт-Петербург</div>
                     <div class="listing-meta">
                         <div class="user-info">
@@ -395,16 +314,6 @@ function getPhoneBrand(model) {
     return 'iphone';
 }
 
-function getConditionText(condition) {
-    const conditions = {
-        'new': 'Новый',
-        'excellent': 'Отличное',
-        'good': 'Хорошее',
-        'satisfactory': 'Удовлетворительное'
-    };
-    return conditions[condition] || condition;
-}
-
 function formatTime(timestamp) {
     if (!timestamp) return 'недавно';
     const date = new Date(timestamp);
@@ -436,53 +345,24 @@ function showTab(tabName) {
     if (targetTab) targetTab.classList.add('active');
     if (targetBtn) targetBtn.classList.add('active');
     
-    // Обновляем данные при переходе
+    // Обновляем ленту при переходе
     if (tabName === 'feed') {
         setTimeout(() => loadListings(), 100);
-    } else if (tabName === 'profile') {
-        updateUserStats();
     }
 }
 
-// Функции профиля
+// Остальные функции остаются без изменений...
 function editProfile() {
     showError('Редактирование профиля - скоро!');
 }
 
 function showMyListings() {
-    const myListings = allListings.filter(item => item.userId === currentUser.id);
-    if (myListings.length === 0) {
-        showError('У вас пока нет объявлений');
-        showTab('create');
-    } else {
-        showListings(myListings);
-        showTab('feed');
-    }
+    showError('Мои объявления - скоро!');
+    showTab('feed');
 }
 
-function testTelegram() {
-    showSuccess('Функция тестирования Telegram - в разработке');
-}
-
-// Модальные окна
 function showListingModal(listingId) {
-    let listing;
-    
-    if (listingId.startsWith('demo')) {
-        // Демо данные
-        listing = {
-            id: 'demo1',
-            phoneModel: 'iPhone 14 Pro',
-            condition: 'excellent',
-            description: 'Отличное состояние, батарея 95%',
-            desiredPhone: 'Samsung S23',
-            location: 'Москва',
-            timestamp: new Date().toISOString()
-        };
-    } else {
-        listing = allListings.find(item => item.id === listingId);
-    }
-    
+    const listing = allListings.find(item => item.id === listingId);
     if (!listing) return;
     
     const modalContent = document.getElementById('modal-listing-content');
@@ -513,6 +393,16 @@ function showListingModal(listingId) {
     document.getElementById('listing-modal').style.display = 'block';
 }
 
+function getConditionText(condition) {
+    const conditions = {
+        'new': 'Новый',
+        'excellent': 'Отличное',
+        'good': 'Хорошее',
+        'satisfactory': 'Удовлетворительное'
+    };
+    return conditions[condition] || condition;
+}
+
 function startExchange() {
     document.getElementById('listing-modal').style.display = 'none';
     document.getElementById('exchange-modal').style.display = 'block';
@@ -535,4 +425,4 @@ window.onclick = function(event) {
             modal.style.display = 'none';
         }
     });
-}
+    }

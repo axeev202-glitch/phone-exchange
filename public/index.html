@@ -28,11 +28,11 @@
             <!-- Лента объявлений -->
             <div id="feed" class="tab-content active">
                 <div class="search-bar">
-                    <input type="text" placeholder="🔍 Поиск телефонов..." class="search-input" id="search-input">
+                    <input type="text" placeholder="🔍 Поиск телефонов..." class="search-input">
                 </div>
                 
-                <div class="listings-container" id="listings-container">
-                    <div class="loading">Загрузка объявлений...</div>
+                <div class="listings-container">
+                    <!-- Объявления будут добавляться через JS -->
                 </div>
             </div>
 
@@ -59,7 +59,6 @@
                 <div class="profile-actions">
                     <button class="btn btn-secondary" onclick="editProfile()">✏️ Редактировать профиль</button>
                     <button class="btn btn-secondary" onclick="showMyListings()">📱 Мои объявления</button>
-                    <button class="btn btn-secondary" onclick="testTelegram()">🔧 Тест Telegram</button>
                 </div>
             </div>
 
@@ -94,16 +93,7 @@
                         <input type="text" id="desired-phone" required placeholder="На что хотите поменять?">
                     </div>
 
-                    <div class="form-group">
-                        <label>Местоположение</label>
-                        <input type="text" id="phone-location" placeholder="Город" value="Москва">
-                    </div>
-
-                    <button type="submit" class="btn btn-primary" id="submit-btn">
-                        📤 Опубликовать объявление
-                    </button>
-                    
-                    <div id="form-status" class="form-status"></div>
+                    <button type="submit" class="btn btn-primary">📤 Опубликовать объявление</button>
                 </form>
             </div>
 
@@ -145,6 +135,6 @@
         </div>
     </div>
 
-    <script src="scripts.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>

@@ -18,6 +18,7 @@ body {
     min-height: 100vh;
 }
 
+/* Шапка */
 .header {
     background: #0088cc;
     color: white;
@@ -40,6 +41,7 @@ body {
     font-size: 0.8em;
 }
 
+/* Навигация */
 .nav {
     display: flex;
     background: white;
@@ -71,6 +73,7 @@ body {
     background: #f5f5f5;
 }
 
+/* Основной контент */
 .main-content {
     padding: 0;
 }
@@ -84,6 +87,7 @@ body {
     display: block;
 }
 
+/* Поиск */
 .search-bar {
     padding: 12px 15px;
     background: white;
@@ -106,6 +110,7 @@ body {
     border-color: #0088cc;
 }
 
+/* Карточки объявлений в стиле Авито */
 .listings-container {
     background: #f8f8f8;
 }
@@ -210,6 +215,7 @@ body {
     color: #999;
 }
 
+/* Профиль */
 .profile-card {
     background: white;
     padding: 20px 15px;
@@ -281,6 +287,7 @@ body {
     gap: 10px;
 }
 
+/* Формы */
 .listing-form {
     background: white;
     padding: 15px;
@@ -324,6 +331,7 @@ body {
     font-family: inherit;
 }
 
+/* Кнопки */
 .btn {
     padding: 14px 20px;
     border: none;
@@ -365,6 +373,7 @@ body {
     background: #d32f2f;
 }
 
+/* Модальные окна */
 .modal {
     display: none;
     position: fixed;
@@ -421,6 +430,120 @@ body {
 
 .close:hover {
     color: #333;
+}
+
+/* Состояния */
+.empty-state {
+    text-align: center;
+    color: #666;
+    padding: 60px 20px;
+    background: white;
+    margin: 10px;
+    border-radius: 8px;
+}
+
+.empty-state h3 {
+    margin-bottom: 10px;
+    color: #333;
+}
+
+/* Бейдж для своих объявлений */
+.my-listing-badge {
+    background: #e3f2fd;
+    color: #0088cc;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.7em;
+    font-weight: 500;
+    margin-top: 8px;
+    display: inline-block;
+}
+
+/* Анимации */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { 
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to { 
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Адаптивность */
+@media (max-width: 480px) {
+    .container {
+        margin: 0;
+    }
+    
+    .header {
+        padding: 12px 10px;
+    }
+    
+    .listing-card {
+        padding: 12px;
+        margin-bottom: 6px;
+    }
+    
+    .listing-image {
+        width: 90px;
+        height: 90px;
+    }
+}
+
+/* Улучшения для Telegram Web App */
+@media (display-mode: standalone) {
+    .container {
+        border-radius: 0;
+    }
+}
+
+/* Индикатор загрузки */
+.loading {
+    text-align: center;
+    padding: 40px 20px;
+    color: #666;
+}
+
+.loading::after {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #0088cc;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-left: 10px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Добавьте эти стили в конец файла */
+
+/* Улучшенные стили для модальных окон */
+.modal-header {
+    padding: 20px 20px 10px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.listing-condition {
+    color: #666;
+    font-size: 0.9em;
+    margin-top: 5px;
 }
 
 .listing-image-large {
@@ -486,507 +609,12 @@ body {
     color: #666;
 }
 
-.empty-state {
-    text-align: center;
-    color: #666;
-    padding: 60px 20px;
-    background: white;
-    margin: 10px;
-    border-radius: 8px;
-}
-
-.empty-state h3 {
-    margin-bottom: 10px;
-    color: #333;
-}
-
-.loading {
-    text-align: center;
-    padding: 40px 20px;
-    color: #666;
-}
-
-.loading::after {
-    content: '';
-    display: inline-block;
-    width: 20px;
-    height: 20px;
-    border: 2px solid #f3f3f3;
-    border-top: 2px solid #0088cc;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-left: 10px;
-}
-
+/* Анимация появления */
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
 }
 
-@keyframes slideUp {
-    from { 
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to { 
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-@media (max-width: 480px) {
-    .container {
-        margin: 0;
-    }
-    
-    .header {
-        padding: 12px 10px;
-    }
-    
-    .listing-card {
-        padding: 12px;
-        margin-bottom: 6px;
-    }
-    
-    .listing-image {
-        width: 90px;
-        height: 90px;
-    }
-}
-@media (display-mode: standalone) {
-    .container {
-        border-radius: 0;
-    }
-}
-
-.my-listing-badge {
-    background: #e3f2fd;
-    color: #0088cc;
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 0.7em;
-    font-weight: 500;
-    margin-top: 8px;
-    display: inline-block;
-}
-
-.form-status {
-    padding: 10px;
-    border-radius: 8px;
-    margin-top: 15px;
-    font-size: 0.9em;
-    text-align: center;
-}
-
-.form-status.info {
-    background: #e3f2fd;
-    color: #0088cc;
-    border: 1px solid #0088cc;
-}
-
-.form-status.success {
-    background: #e8f5e8;
-    color: #2e7d32;
-    border: 1px solid #2e7d32;
-}
-
-.form-status.error {
-    background: #ffebee;
-    color: #c62828;
-    border: 1px solid #c62828;
-}
-
-.btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
-.btn-primary:hover:not(:disabled) {
-    background: #0077b3;
-}
-
-.btn-secondary:hover:not(:disabled) {
-    background: #e9e9e9;
-}
-
-.btn-danger:hover:not(:disabled) {
-    background: #d32f2f;
-}
-
-.listing-condition {
-    font-size: 0.8em;
-    color: #0088cc;
-    margin-bottom: 6px;
-    font-weight: 500;
-}
-
-.exchanges-container {
-    padding: 20px;
-}
-
-.exchanges-container h3 {
-    margin-bottom: 15px;
-    color: #333;
-}
-
-.listing-form h3 {
-    margin-bottom: 20px;
-    text-align: center;
-    color: #333;
-}
-
-#phone-location {
-    background: #fafafa;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: 12px;
-    font-size: 14px;
-    width: 100%;
-}
-
-#phone-location:focus {
-    outline: none;
-    border-color: #0088cc;
-    background: white;
-}
-
-#form-status {
-    margin-top: 15px;
-    padding: 10px;
-    border-radius: 8px;
-    text-align: center;
-    font-size: 0.9em;
-}
-
-#submit-btn:disabled {
-    background: #ccc;
-    cursor: not-allowed;
-}
-
-#submit-btn:disabled:hover {
-    background: #ccc;
-}
-
-.modal-body .listing-image-large.iphone { 
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-}
-
-.modal-body .listing-image-large.samsung { 
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); 
-}
-
-.modal-body .listing-image-large.xiaomi { 
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); 
-}
-
-.modal-body .listing-image-large.google { 
-    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); 
-}
-
-.modal-body .listing-image-large.huawei { 
-    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); 
-}
-
 body {
     animation: fadeIn 0.5s ease-in;
-}
-
-.profile-actions .btn {
-    margin: 5px 0;
-}
-
-.nav-btn:first-child {
-    border-radius: 0;
-}
-
-.nav-btn:last-child {
-    border-radius: 0;
-}
-
-.search-input::placeholder {
-    color: #999;
-}
-
-.form-group input::placeholder,
-.form-group textarea::placeholder {
-    color: #999;
-}
-
-.listing-card:last-child {
-    margin-bottom: 0;
-}
-
-.modal-content .close {
-    background: none;
-    border: none;
-    font-size: 28px;
-    line-height: 1;
-}
-
-.exchange-info p:first-child {
-    margin-top: 0;
-}
-
-.exchange-info p:last-child {
-    margin-bottom: 0;
-}
-
-.stat:first-child {
-    margin-left: 0;
-}
-
-.stat:last-child {
-    margin-right: 0;
-}
-
-.avatar {
-    user-select: none;
-}
-
-.listing-image {
-    user-select: none;
-}
-
-.btn {
-    user-select: none;
-}
-
-.nav-btn {
-    user-select: none;
-}
-
-.loading {
-    user-select: none;
-}
-
-.empty-state {
-    user-select: none;
-}
-
-.form-status {
-    user-select: none;
-}
-
-.listing-card {
-    user-select: none;
-}
-
-.modal {
-    user-select: none;
-}
-
-@media (prefers-color-scheme: dark) {
-    .container {
-        background: #1a1a1a;
-        color: #ffffff;
-    }
-    
-    body {
-        background: #1a1a1a;
-        color: #ffffff;
-    }
-    
-    .listing-card {
-        background: #2d2d2d;
-        color: #ffffff;
-    }
-    
-    .listing-card:hover {
-        background: #333333;
-    }
-    
-    .listing-title {
-        color: #ffffff;
-    }
-    
-    .listing-description {
-        color: #cccccc;
-    }
-    
-    .listing-price {
-        color: #ffffff;
-    }
-    
-    .search-input {
-        background: #2d2d2d;
-        border-color: #444444;
-        color: #ffffff;
-    }
-    
-    .search-input:focus {
-        background: #333333;
-        border-color: #0088cc;
-    }
-    
-    .form-group input,
-    .form-group select,
-    .form-group textarea {
-        background: #2d2d2d;
-        border-color: #444444;
-        color: #ffffff;
-    }
-    
-    .form-group input:focus,
-    .form-group select:focus,
-    .form-group textarea:focus {
-        background: #333333;
-        border-color: #0088cc;
-    }
-    
-    .modal-content {
-        background: #2d2d2d;
-        color: #ffffff;
-    }
-    
-    .modal-header {
-        border-bottom-color: #444444;
-    }
-    
-    .modal-footer {
-        border-top-color: #444444;
-    }
-    
-    .exchange-info {
-        background: #333333;
-        color: #cccccc;
-    }
-    
-    .btn-secondary {
-        background: #333333;
-        color: #ffffff;
-        border-color: #444444;
-    }
-    
-    .btn-secondary:hover {
-        background: #3a3a3a;
-    }
-}
-
-.listing-content {
-    align-items: flex-start;
-}
-
-.listing-details {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    height: 100px;
-}
-
-.listing-meta {
-    margin-top: auto;
-}
-
-.profile-card .rating {
-    font-size: 1.1em;
-    margin-bottom: 10px;
-}
-
-.profile-stats .stat-number {
-    font-size: 1.4em;
-}
-
-.profile-stats .stat-label {
-    font-size: 0.8em;
-}
-
-.listing-form .btn {
-    margin-top: 10px;
-}
-
-.modal-actions .btn {
-    margin: 2px 0;
-}
-
-.nav {
-    backdrop-filter: blur(10px);
-}
-
-.header {
-    backdrop-filter: blur(10px);
-}
-
-@media (max-width: 380px) {
-    .listing-image {
-        width: 80px;
-        height: 80px;
-        font-size: 0.7em;
-    }
-    
-    .listing-details {
-        height: 80px;
-    }
-    
-    .nav-btn {
-        padding: 10px 3px;
-        font-size: 0.7em;
-    }
-    
-    .profile-stats {
-        padding: 10px 0;
-    }
-    
-    .stat-number {
-        font-size: 1.2em;
-    }
-}
-
-@media (max-width: 320px) {
-    .container {
-        min-width: 320px;
-    }
-    
-    .listing-content {
-        gap: 8px;
-    }
-    
-    .listing-image {
-        width: 70px;
-        height: 70px;
-    }
-    
-    .profile-card {
-        padding: 15px 10px;
-    }
-    
-    .avatar {
-        width: 60px;
-        height: 60px;
-        font-size: 1.2em;
-    }
-}
-
-.listing-card {
-    touch-action: manipulation;
-}
-
-.btn {
-    touch-action: manipulation;
-}
-
-.nav-btn {
-    touch-action: manipulation;
-}
-
-.search-input {
-    touch-action: manipulation;
-}
-
-.form-group input,
-.form-group select,
-.form-group textarea {
-    touch-action: manipulation;
-}
-
-.modal {
-    -webkit-overflow-scrolling: touch;
-}
-
-.modal-content {
-    -webkit-overflow-scrolling: touch;
 }
