@@ -1,14 +1,10 @@
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-// Определяем URL API в зависимости от среды
-const isLocalhost = window.location.hostname === 'localhost' || 
-                    window.location.hostname === '127.0.0.1';
-const API_URL = isLocalhost 
-  ? 'http://localhost:3000/api/listings' 
-  : 'https://' + window.location.hostname + '/api/listings';
-
-console.log('API URL:', API_URL);
+// URL API на хостинге
+const API_BASE_URL = 'https://phone-exchange.vercel.app//api';
+const LISTINGS_API_URL = `${API_BASE_URL}/listings`;
+const EXCHANGES_API_URL = `${API_BASE_URL}/exchanges`;
 
 // Глобальные переменные
 let currentUser = null;
@@ -158,7 +154,6 @@ function initCitySelector() {
         }
     });
     
-    // Исправление: делаем список городов поверх других элементов
     citiesList.style.zIndex = '1000';
     citiesList.style.position = 'absolute';
 }
@@ -318,10 +313,11 @@ function filterListings(searchTerm) {
 }
 
 function setupButtons() {
-    // Навигация
+    // Навигация по вкладкам
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             const tab = this.dataset.tab;
+            console.log('Navigation button clicked:', tab);
             if (tab !== currentTab) {
                 showTab(tab);
             }
@@ -355,48 +351,76 @@ function setupButtons() {
             }
         });
     });
+    
+    // Обработчики для кнопок в профиле
+    const profileActions = document.querySelector('.profile-actions');
+    if (profileActions) {
+        profileActions.addEventListener('click', function(e) {
+            if (e.target.closest('.btn')) {
+                const button = e.target.closest('.btn');
+                const action = button.textContent.trim();
+                
+                if (action.includes('Мои объявления')) {
+                    showMyListingsTab();
+                } else if (action.includes('Активные сделки')) {
+                    showExchangesTab();
+                } else if (action.includes('Редактировать профиль')) {
+                    editProfile();
+                }
+            }
+        });
+    }
 }
 
-// Упрощенная функция загрузки объявлений
+// Загрузка объявлений с сервера
 async function loadListings() {
-    console.log('Loading listings from:', API_URL);
+    console.log('Loading listings from server...');
     
     try {
-        const response = await fetch(API_URL, {
+        const response = await fetch(LISTINGS_API_URL, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
             }
         });
         
-        console.log('Response status:', response.status);
-        
-        if (response.ok) {
-            const data = await response.json();
-            console.log('Loaded listings from API:', data);
-            
-            // Используем данные с API
-            allListings = Array.isArray(data) ? data : [];
-        } else {
+        if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         
+        const data = await response.json();
+        console.log('Loaded listings from server:', data);
+        
+        allListings = Array.isArray(data) ? data : [];
+        updateMyListings();
+        showListings();
+        
     } catch (error) {
-        console.warn('Не удалось загрузить объявления с API, используем локальные:', error);
-        // Используем локальные объявления если API недоступно
-        allListings = allListings || [];
+        console.error('Ошибка загрузки объявлений:', error);
+        showError('Не удалось загрузить объявления с сервера');
+        allListings = [];
+        showListings();
     }
-    
-    updateMyListings();
-    showListings();
 }
 
-// Загрузка активных сделок
+// Загрузка активных сделок с сервера
 async function loadActiveExchanges() {
     try {
-        // В реальном приложении здесь был бы запрос к API
-        activeExchanges = []; // Пустой массив вместо демо данных
+        const response = await fetch(EXCHANGES_API_URL, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            activeExchanges = Array.isArray(data) ? data : [];
+        } else {
+            activeExchanges = [];
+        }
         showActiveExchanges();
+        
     } catch (error) {
         console.error('Ошибка загрузки сделок:', error);
         activeExchanges = [];
@@ -428,7 +452,7 @@ function updateMyListings() {
     showMyListings();
 }
 
-// Создание объявления - УПРОЩЕННАЯ ВЕРСИЯ
+// Создание объявления на сервере
 async function createListing() {
     console.log('Starting to create listing...');
     
@@ -462,58 +486,38 @@ async function createListing() {
             description: description || 'Нет описания',
             desiredPhone: desiredPhone,
             location: city,
-            userId: currentUser?.id || 'anonymous',
+            userId: currentUser?.id,
             userInfo: {
-                name: currentUser?.name || 'Анонимный пользователь',
-                username: currentUser?.username || 'anonymous'
+                name: currentUser?.name,
+                username: currentUser?.username
             },
-            photos: uploadedPhotos.map(photo => photo.data),
-            timestamp: new Date().toISOString()
+            photos: uploadedPhotos.map(photo => photo.data)
         };
         
-        console.log('Sending data to API:', listingData);
+        console.log('Sending data to server:', listingData);
         
-        // Если API недоступно, создаем локальное объявление
-        let result;
-        try {
-            const response = await fetch(API_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(listingData)
-            });
-            
-            console.log('API response status:', response.status);
-            
-            if (response.ok) {
-                result = await response.json();
-                console.log('API response data:', result);
-            } else {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-        } catch (apiError) {
-            console.warn('API недоступно, создаем локальное объявление:', apiError);
-            
-            // Создаем локальное объявление
-            const localListing = {
-                ...listingData,
-                id: Date.now().toString(),
-                timestamp: new Date().toISOString()
-            };
-            
-            result = {
-                success: true,
-                listing: localListing,
-                message: 'Объявление создано локально (API недоступно)'
-            };
+        // Отправляем на сервер
+        const response = await fetch(LISTINGS_API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(listingData)
+        });
+        
+        console.log('Server response status:', response.status);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP error! status: ${response.status}, details: ${errorText}`);
         }
         
+        const result = await response.json();
+        console.log('Server response data:', result);
+        
         if (result.success) {
-            // Добавляем объявление в локальный массив
-            const newListing = result.listing;
-            allListings.unshift(newListing);
-            lastCreatedListingId = newListing.id;
+            // Сохраняем ID созданного объявления
+            lastCreatedListingId = result.listing.id;
             
             // Показываем успех
             showSuccess('✅ Объявление успешно создано!');
@@ -524,13 +528,12 @@ async function createListing() {
             uploadedPhotos = [];
             updatePhotoPreview();
             
+            // Перезагружаем объявления с сервера
+            await loadListings();
+            
             // Переходим в ленту
             setTimeout(() => {
                 switchTab('feed');
-                
-                // Обновляем список объявлений
-                updateMyListings();
-                showListings();
                 
                 // Подсвечиваем новое объявление
                 setTimeout(() => {
@@ -553,7 +556,7 @@ async function createListing() {
     }
 }
 
-// Упрощенная функция подсветки нового объявления
+// Подсветка нового объявления
 function highlightNewListing() {
     if (lastCreatedListingId) {
         setTimeout(() => {
@@ -574,7 +577,7 @@ function highlightNewListing() {
     }
 }
 
-// Переключение вкладок с анимацией
+// Переключение вкладок
 function showTab(tabName) {
     if (tabName === currentTab) return;
     
@@ -622,19 +625,16 @@ function animateTabTransition(fromTab, toTab) {
     }, 400);
 }
 
-// Простая функция переключения вкладок (без анимации)
+// Простая функция переключения вкладок
 function switchTab(tabName) {
-    // Скрываем все вкладки
     document.querySelectorAll('.tab-content').forEach(tab => {
         tab.classList.remove('active');
     });
     
-    // Убираем активность у всех кнопок
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.classList.remove('active');
     });
     
-    // Показываем нужную вкладку
     const targetTab = document.getElementById(tabName);
     const targetBtn = document.querySelector(`[data-tab="${tabName}"]`);
     
@@ -644,7 +644,20 @@ function switchTab(tabName) {
     currentTab = tabName;
 }
 
-// Обновленная функция показа объявлений
+// Переключиться на вкладку моих объявлений
+function showMyListingsTab() {
+    showTab('profile');
+    setTimeout(() => {
+        showMyListings();
+    }, 500);
+}
+
+// Переключиться на вкладку сделок
+function showExchangesTab() {
+    showTab('exchanges');
+}
+
+// Показ объявлений
 function showListings(listings = allListings, container = document.getElementById('feed-listings')) {
     if (!container) return;
     
@@ -664,7 +677,6 @@ function showListings(listings = allListings, container = document.getElementByI
     );
     
     container.innerHTML = sortedListings.map((item, index) => {
-        // Безопасное получение данных
         const phoneModel = item.phoneModel || 'Неизвестная модель';
         const description = item.description || 'Нет описания';
         const desiredPhone = item.desiredPhone || 'Любой телефон';
@@ -700,7 +712,7 @@ function showListings(listings = allListings, container = document.getElementByI
     }).join('');
 }
 
-// Показ моих объявлений в профиле
+// Показ моих объявлений
 function showMyListings() {
     const container = document.getElementById('my-listings-container');
     const section = document.getElementById('my-listings-section');
@@ -809,7 +821,6 @@ function showMyListings() {
     const section = document.getElementById('my-listings-section');
     if (section) {
         section.style.display = 'block';
-        // Перезагружаем список моих объявлений
         updateMyListings();
     }
 }
@@ -820,19 +831,6 @@ function hideMyListings() {
     if (section) {
         section.style.display = 'none';
     }
-}
-
-// Переключиться на вкладку моих объявлений (для кнопки в профиле)
-function showMyListingsTab() {
-    showTab('profile');
-    setTimeout(() => {
-        showMyListings();
-    }, 500);
-}
-
-// Показать активные сделки
-function showActiveExchanges() {
-    showTab('exchanges');
 }
 
 // Уведомления
@@ -892,8 +890,8 @@ function editListing(listingId) {
     showError('Редактирование объявления - скоро!');
 }
 
-// Удаление объявления
-function deleteListing(listingId) {
+// Удаление объявления с сервера
+async function deleteListing(listingId) {
     listingToDelete = listingId;
     document.getElementById('delete-modal').style.display = 'block';
 }
@@ -907,44 +905,109 @@ async function confirmDelete() {
     if (!listingToDelete) return;
     
     try {
-        // В реальном приложении здесь был бы DELETE запрос к API
-        allListings = allListings.filter(listing => listing.id !== listingToDelete);
+        // Отправляем запрос на удаление на сервер
+        const response = await fetch(`${LISTINGS_API_URL}/${listingToDelete}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
         
-        // Обновляем интерфейс
-        updateMyListings();
-        showListings();
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
         
-        showSuccess('Объявление успешно удалено!');
+        const result = await response.json();
+        
+        if (result.success) {
+            // Обновляем локальный список
+            allListings = allListings.filter(listing => listing.id !== listingToDelete);
+            
+            // Обновляем интерфейс
+            updateMyListings();
+            showListings();
+            
+            showSuccess('Объявление успешно удалено!');
+        } else {
+            throw new Error(result.error || 'Ошибка при удалении');
+        }
+        
         closeDeleteModal();
         
     } catch (error) {
+        console.error('Ошибка при удалении объявления:', error);
         showError('Ошибка при удалении объявления');
     }
 }
 
 // Функции для сделок
-function acceptExchange(exchangeId) {
-    const exchange = activeExchanges.find(e => e.id === exchangeId);
-    if (exchange) {
-        exchange.status = 'active';
-        showActiveExchanges();
-        showSuccess('Сделка принята!');
+async function acceptExchange(exchangeId) {
+    try {
+        const response = await fetch(`${EXCHANGES_API_URL}/${exchangeId}/accept`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        if (response.ok) {
+            const exchange = activeExchanges.find(e => e.id === exchangeId);
+            if (exchange) {
+                exchange.status = 'active';
+                showActiveExchanges();
+                showSuccess('Сделка принята!');
+            }
+        } else {
+            throw new Error('Ошибка сервера');
+        }
+    } catch (error) {
+        showError('Ошибка при принятии сделки');
     }
 }
 
-function declineExchange(exchangeId) {
-    activeExchanges = activeExchanges.filter(e => e.id !== exchangeId);
-    showActiveExchanges();
-    showSuccess('Сделка отклонена');
+async function declineExchange(exchangeId) {
+    try {
+        const response = await fetch(`${EXCHANGES_API_URL}/${exchangeId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        if (response.ok) {
+            activeExchanges = activeExchanges.filter(e => e.id !== exchangeId);
+            showActiveExchanges();
+            showSuccess('Сделка отклонена');
+        } else {
+            throw new Error('Ошибка сервера');
+        }
+    } catch (error) {
+        showError('Ошибка при отклонении сделки');
+    }
 }
 
-function completeExchange(exchangeId) {
-    const exchange = activeExchanges.find(e => e.id === exchangeId);
-    if (exchange) {
-        exchange.status = 'completed';
-        showActiveExchanges();
-        showSuccess('Сделка завершена!');
-        updateMyListings();
+async function completeExchange(exchangeId) {
+    try {
+        const response = await fetch(`${EXCHANGES_API_URL}/${exchangeId}/complete`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        if (response.ok) {
+            const exchange = activeExchanges.find(e => e.id === exchangeId);
+            if (exchange) {
+                exchange.status = 'completed';
+                showActiveExchanges();
+                showSuccess('Сделка завершена!');
+                updateMyListings();
+            }
+        } else {
+            throw new Error('Ошибка сервера');
+        }
+    } catch (error) {
+        showError('Ошибка при завершении сделки');
     }
 }
 
@@ -1084,22 +1147,31 @@ function sendMessage() {
     closeMessageModal();
 }
 
-function confirmExchange() {
-    showSuccess('Обмен успешно начат! Ожидайте подтверждения.');
-    document.getElementById('exchange-modal').style.display = 'none';
-    
-    // Добавляем новую сделку
-    if (currentMessageListing) {
-        const newExchange = {
-            id: Date.now().toString(),
-            status: 'pending',
-            myPhone: currentMessageListing.desiredPhone,
-            theirPhone: currentMessageListing.phoneModel,
-            theirUser: currentMessageListing.userInfo?.username || 'unknown',
-            timestamp: new Date().toISOString()
-        };
-        activeExchanges.unshift(newExchange);
-        showActiveExchanges();
+async function confirmExchange() {
+    try {
+        const response = await fetch(EXCHANGES_API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                listingId: currentListingId,
+                userId: currentUser.id
+            })
+        });
+        
+        if (response.ok) {
+            showSuccess('Обмен успешно начат! Ожидайте подтверждения.');
+            document.getElementById('exchange-modal').style.display = 'none';
+            
+            // Перезагружаем сделки
+            await loadActiveExchanges();
+        } else {
+            throw new Error('Ошибка сервера');
+        }
+        
+    } catch (error) {
+        showError('Ошибка при создании обмена');
     }
 }
 
@@ -1113,7 +1185,7 @@ window.onclick = function(event) {
     });
 }
 
-// Функция для отладки - показывает текущее состояние
+// Функция для отладки
 function debugState() {
     console.log('=== DEBUG INFO ===');
     console.log('Current User:', currentUser);
