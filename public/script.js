@@ -237,7 +237,7 @@ function initPhotoUpload() {
         photoPreview.innerHTML = uploadedPhotos.map(photo => `
             <div class="photo-preview-item">
                 <img src="${photo.data}" alt="Preview">
-                <button class="remove-photo" onclick="removePhoto('${photo.id}')">×</button>
+                <button type="button" class="remove-photo" onclick="removePhoto('${photo.id}')">×</button>
             </div>
         `).join('');
         
@@ -339,6 +339,18 @@ function setupButtons() {
             this.closest('.modal').style.display = 'none';
         });
     });
+    
+    // Обработчики для кнопок в модальных окнах
+    document.querySelectorAll('.modal-actions .btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const action = this.textContent.trim();
+            if (action.includes('обмен')) {
+                startExchange();
+            } else if (action.includes('Написать')) {
+                contactSeller();
+            }
+        });
+    });
 }
 
 // Загрузка объявлений
@@ -369,17 +381,23 @@ async function loadListings() {
     } catch (error) {
         console.error('Ошибка загрузки объявлений:', error);
         showError('Не удалось загрузить объявления');
-        // Не показываем демо данные - только пустой список
         allListings = [];
         showListings();
     }
 }
 
 // Загрузка активных сделок
-function loadActiveExchanges() {
-    // В реальном приложении здесь был бы запрос к API
-    activeExchanges = demoExchanges;
-    showActiveExchanges();
+async function loadActiveExchanges() {
+    try {
+        // В реальном приложении здесь был бы запрос к API
+        // activeExchanges = await fetch('/api/exchanges').then(r => r.json());
+        activeExchanges = []; // Пустой массив вместо демо данных
+        showActiveExchanges();
+    } catch (error) {
+        console.error('Ошибка загрузки сделок:', error);
+        activeExchanges = [];
+        showActiveExchanges();
+    }
 }
 
 // Обновление моих объявлений
@@ -753,8 +771,8 @@ function showMyListings() {
                         <div class="timestamp">${formatTime(item.timestamp)}</div>
                     </div>
                     <div class="my-listing-actions">
-                        <button class="btn btn-secondary" onclick="editListing('${item.id}')">✏️ Редактировать</button>
-                        <button class="btn btn-danger" onclick="deleteListing('${item.id}')">🗑️ Удалить</button>
+                        <button type="button" class="btn btn-secondary" onclick="editListing('${item.id}')">✏️ Редактировать</button>
+                        <button type="button" class="btn btn-danger" onclick="deleteListing('${item.id}')">🗑️ Удалить</button>
                     </div>
                 </div>
             </div>
@@ -802,11 +820,11 @@ function showActiveExchanges() {
             </div>
             <div class="exchange-actions">
                 ${exchange.status === 'pending' ? `
-                    <button class="btn btn-primary" onclick="acceptExchange('${exchange.id}')">✅ Принять</button>
-                    <button class="btn btn-secondary" onclick="declineExchange('${exchange.id}')">❌ Отклонить</button>
+                    <button type="button" class="btn btn-primary" onclick="acceptExchange('${exchange.id}')">✅ Принять</button>
+                    <button type="button" class="btn btn-secondary" onclick="declineExchange('${exchange.id}')">❌ Отклонить</button>
                 ` : exchange.status === 'active' ? `
-                    <button class="btn btn-primary" onclick="completeExchange('${exchange.id}')">✅ Завершить</button>
-                    <button class="btn btn-secondary" onclick="contactUser('${exchange.theirUser}')">💌 Написать</button>
+                    <button type="button" class="btn btn-primary" onclick="completeExchange('${exchange.id}')">✅ Завершить</button>
+                    <button type="button" class="btn btn-secondary" onclick="contactUser('${exchange.theirUser}')">💌 Написать</button>
                 ` : ''}
             </div>
         </div>
@@ -1097,7 +1115,7 @@ function confirmExchange() {
     showSuccess('Обмен успешно начат! Ожидайте подтверждения.');
     document.getElementById('exchange-modal').style.display = 'none';
     
-    // Добавляем демо сделку
+    // Добавляем новую сделку
     if (currentMessageListing) {
         const newExchange = {
             id: Date.now().toString(),

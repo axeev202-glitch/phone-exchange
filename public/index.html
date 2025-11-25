@@ -236,17 +236,17 @@
     </div>
 
     <script src="script.js"></script>
-    <script>
-        // Скрываем индикатор загрузки
-        window.addEventListener('load', function() {
-            setTimeout(() => {
-                const loader = document.getElementById('loading');
-                if (loader) {
-                    loader.style.opacity = '0';
-                    setTimeout(() => loader.remove(), 500);
-                }
-            }, 1000);
-        });
-    </script>
+<script>
+    // Скрываем индикатор загрузки
+    window.addEventListener('load', function() {
+        setTimeout(() => {
+            const loader = document.getElementById('loading');
+            if (loader) {
+                loader.style.opacity = '0';
+                setTimeout(() => loader.remove(), 500);
+            }
+        }, 1000);
+    });
+</script>
 </body>
 </html>
