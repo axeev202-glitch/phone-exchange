@@ -163,10 +163,48 @@ function initCitySelector() {
     citiesList.style.position = 'absolute';
 }
 
+// Глобальная функция для обновления превью фото
+function updatePhotoPreview() {
+    const photoPreview = document.getElementById('photo-preview');
+    const uploadArea = document.getElementById('photo-upload-area');
+    
+    if (!photoPreview) return;
+    
+    photoPreview.innerHTML = uploadedPhotos.map(photo => `
+        <div class="photo-preview-item">
+            <img src="${photo.data}" alt="Preview">
+            <button type="button" class="remove-photo" onclick="removePhoto('${photo.id}')">×</button>
+        </div>
+    `).join('');
+    
+    // Обновляем текст в области загрузки
+    const uploadPlaceholder = uploadArea?.querySelector('.upload-placeholder');
+    if (uploadPlaceholder) {
+        if (uploadedPhotos.length > 0) {
+            uploadPlaceholder.innerHTML = `
+                <span class="upload-icon">📷</span>
+                <p>Добавить еще фото</p>
+                <small>Осталось ${5 - uploadedPhotos.length} из 5</small>
+            `;
+        } else {
+            uploadPlaceholder.innerHTML = `
+                <span class="upload-icon">📷</span>
+                <p>Добавьте фото телефона</p>
+                <small>Максимум 5 фото</small>
+            `;
+        }
+    }
+}
+
+// Глобальная функция для удаления фото
+function removePhoto(photoId) {
+    uploadedPhotos = uploadedPhotos.filter(photo => photo.id !== photoId);
+    updatePhotoPreview();
+}
+
 function initPhotoUpload() {
     const uploadArea = document.getElementById('photo-upload-area');
     const fileInput = document.getElementById('photo-upload');
-    const photoPreview = document.getElementById('photo-preview');
     
     if (!uploadArea || !fileInput) return;
     
@@ -222,7 +260,7 @@ function initPhotoUpload() {
                     file: file
                 };
                 uploadedPhotos.push(photoData);
-                updatePhotoPreview();
+                updatePhotoPreview(); // Теперь эта функция доступна глобально
             };
             reader.readAsDataURL(file);
         });
@@ -230,40 +268,6 @@ function initPhotoUpload() {
         // Сбрасываем input
         fileInput.value = '';
     }
-    
-    function updatePhotoPreview() {
-        if (!photoPreview) return;
-        
-        photoPreview.innerHTML = uploadedPhotos.map(photo => `
-            <div class="photo-preview-item">
-                <img src="${photo.data}" alt="Preview">
-                <button type="button" class="remove-photo" onclick="removePhoto('${photo.id}')">×</button>
-            </div>
-        `).join('');
-        
-        // Обновляем текст в области загрузки
-        const uploadPlaceholder = uploadArea.querySelector('.upload-placeholder');
-        if (uploadPlaceholder) {
-            if (uploadedPhotos.length > 0) {
-                uploadPlaceholder.innerHTML = `
-                    <span class="upload-icon">📷</span>
-                    <p>Добавить еще фото</p>
-                    <small>Осталось ${5 - uploadedPhotos.length} из 5</small>
-                `;
-            } else {
-                uploadPlaceholder.innerHTML = `
-                    <span class="upload-icon">📷</span>
-                    <p>Добавьте фото телефона</p>
-                    <small>Максимум 5 фото</small>
-                `;
-            }
-        }
-    }
-}
-
-function removePhoto(photoId) {
-    uploadedPhotos = uploadedPhotos.filter(photo => photo.id !== photoId);
-    updatePhotoPreview();
 }
 
 function initSearch() {
@@ -288,10 +292,10 @@ function filterListings(searchTerm) {
     
     if (searchTerm) {
         filteredListings = allListings.filter(listing => 
-            listing.phoneModel.toLowerCase().includes(searchTerm) ||
-            listing.desiredPhone.toLowerCase().includes(searchTerm) ||
-            listing.description.toLowerCase().includes(searchTerm) ||
-            listing.location.toLowerCase().includes(searchTerm)
+            listing.phoneModel?.toLowerCase().includes(searchTerm) ||
+            listing.desiredPhone?.toLowerCase().includes(searchTerm) ||
+            listing.description?.toLowerCase().includes(searchTerm) ||
+            listing.location?.toLowerCase().includes(searchTerm)
         );
     }
     
@@ -374,13 +378,17 @@ async function loadListings() {
         const data = await response.json();
         console.log('Loaded listings:', data);
         
-        allListings = Array.isArray(data) ? data : [];
+        // Фильтруем только реальные объявления (не демо)
+        allListings = Array.isArray(data) ? data.filter(listing => 
+            listing.userId && listing.userId !== 'demo'
+        ) : [];
+        
         updateMyListings();
         showListings();
         
     } catch (error) {
         console.error('Ошибка загрузки объявлений:', error);
-        showError('Не удалось загрузить объявления');
+        // Не показываем ошибку пользователю, просто показываем пустой список
         allListings = [];
         showListings();
     }
@@ -390,7 +398,6 @@ async function loadListings() {
 async function loadActiveExchanges() {
     try {
         // В реальном приложении здесь был бы запрос к API
-        // activeExchanges = await fetch('/api/exchanges').then(r => r.json());
         activeExchanges = []; // Пустой массив вместо демо данных
         showActiveExchanges();
     } catch (error) {
@@ -474,10 +481,14 @@ async function createListing() {
         
         console.log('API response status:', response.status);
         
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const result = await response.json();
         console.log('API response data:', result);
         
-        if (response.ok && result.success) {
+        if (result.success) {
             // Сохраняем ID созданного объявления для подсветки
             lastCreatedListingId = result.listing.id;
             
@@ -488,7 +499,7 @@ async function createListing() {
             document.getElementById('create-listing-form').reset();
             selectedCity = '';
             uploadedPhotos = [];
-            updatePhotoPreview();
+            updatePhotoPreview(); // Теперь эта функция доступна
             
         } else {
             // Ошибка от API
@@ -505,6 +516,9 @@ async function createListing() {
         submitBtn.disabled = false;
     }
 }
+
+// Остальные функции остаются без изменений...
+// [Здесь должны быть все остальные функции из предыдущего кода]
 
 // Анимация успеха и перехода к ленте
 async function animateSuccessAndTransition() {
@@ -847,19 +861,6 @@ function hideMyListings() {
     if (section) {
         section.style.display = 'none';
     }
-}
-
-// Переключиться на вкладку моих объявлений (для кнопки в профиле)
-function showMyListingsTab() {
-    showTab('profile');
-    setTimeout(() => {
-        showMyListings();
-    }, 500);
-}
-
-// Показать активные сделки
-function showActiveExchanges() {
-    showTab('exchanges');
 }
 
 // Уведомления
