@@ -44,19 +44,6 @@ async function sendToTelegram(listing) {
     }
 }
 
-// Функция получения информации о боте (для проверки токена)
-async function getBotInfo() {
-    try {
-        const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getMe`);
-        const result = await response.json();
-        console.log('Bot info:', result);
-        return result;
-    } catch (error) {
-        console.error('Error getting bot info:', error);
-        return null;
-    }
-}
-
 function getConditionText(condition) {
     const conditions = {
         'new': 'Новый',
@@ -82,7 +69,9 @@ export default async function handler(req, res) {
         // GET запрос - получить все объявления
         if (req.method === 'GET') {
             console.log('GET request - returning', listings.length, 'listings');
-            return res.status(200).json(listings);
+            // Возвращаем только реальные объявления (без демо)
+            const realListings = listings.filter(listing => !listing.id.startsWith('demo'));
+            return res.status(200).json(realListings);
         }
 
         // POST запрос - создать новое объявление
@@ -165,29 +154,4 @@ export default async function handler(req, res) {
     }
 }
 
-// Проверяем бота при запуске
-if (typeof window === 'undefined') {
-    getBotInfo().then(botInfo => {
-        if (botInfo && botInfo.ok) {
-            console.log('✅ Bot is connected:', botInfo.result.username);
-        } else {
-            console.log('❌ Bot connection failed');
-        }
-    });
-}
-
-// Демо данные для разработки
-if (process.env.NODE_ENV !== 'production' && listings.length === 0) {
-    listings = [
-        {
-            id: '1',
-            phoneModel: 'iPhone 14 Pro',
-            condition: 'excellent',
-            description: 'Отличное состояние, батарея 95%',
-            desiredPhone: 'Samsung S23',
-            location: 'Москва',
-            timestamp: new Date().toISOString(),
-            userId: 'demo_user'
-        }
-    ];
-}
+// Убираем демо данные из API
