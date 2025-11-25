@@ -260,7 +260,7 @@ function initPhotoUpload() {
                     file: file
                 };
                 uploadedPhotos.push(photoData);
-                updatePhotoPreview(); // Теперь эта функция доступна глобально
+                updatePhotoPreview();
             };
             reader.readAsDataURL(file);
         });
@@ -357,7 +357,7 @@ function setupButtons() {
     });
 }
 
-// Загрузка объявлений
+// Упрощенная функция загрузки объявлений
 async function loadListings() {
     console.log('Loading listings from:', API_URL);
     
@@ -371,27 +371,24 @@ async function loadListings() {
         
         console.log('Response status:', response.status);
         
-        if (!response.ok) {
+        if (response.ok) {
+            const data = await response.json();
+            console.log('Loaded listings from API:', data);
+            
+            // Используем данные с API
+            allListings = Array.isArray(data) ? data : [];
+        } else {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         
-        const data = await response.json();
-        console.log('Loaded listings:', data);
-        
-        // Фильтруем только реальные объявления (не демо)
-        allListings = Array.isArray(data) ? data.filter(listing => 
-            listing.userId && listing.userId !== 'demo'
-        ) : [];
-        
-        updateMyListings();
-        showListings();
-        
     } catch (error) {
-        console.error('Ошибка загрузки объявлений:', error);
-        // Не показываем ошибку пользователю, просто показываем пустой список
-        allListings = [];
-        showListings();
+        console.warn('Не удалось загрузить объявления с API, используем локальные:', error);
+        // Используем локальные объявления если API недоступно
+        allListings = allListings || [];
     }
+    
+    updateMyListings();
+    showListings();
 }
 
 // Загрузка активных сделок
@@ -411,7 +408,9 @@ async function loadActiveExchanges() {
 function updateMyListings() {
     if (!currentUser) return;
     
-    myListings = allListings.filter(listing => listing.userId === currentUser.id);
+    myListings = allListings.filter(listing => 
+        listing.userId === currentUser.id
+    );
     
     // Обновляем счетчик
     const countElement = document.getElementById('active-listings');
@@ -421,14 +420,15 @@ function updateMyListings() {
     
     const completedElement = document.getElementById('completed-exchanges');
     if (completedElement) {
-        completedElement.textContent = activeExchanges.filter(e => e.status === 'completed').length;
+        const completedCount = activeExchanges.filter(e => e.status === 'completed').length;
+        completedElement.textContent = completedCount;
     }
     
     // Показываем мои объявления если секция видима
     showMyListings();
 }
 
-// Создание объявления
+// Создание объявления - УПРОЩЕННАЯ ВЕРСИЯ
 async function createListing() {
     console.log('Starting to create listing...');
     
@@ -454,56 +454,92 @@ async function createListing() {
     btnLoading.style.display = 'flex';
     submitBtn.disabled = true;
     
-    const listingData = {
-        phoneModel: phoneModel,
-        condition: condition,
-        description: description || 'Нет описания',
-        desiredPhone: desiredPhone,
-        location: city,
-        userId: currentUser?.id,
-        userInfo: {
-            name: currentUser?.name,
-            username: currentUser?.username
-        },
-        photos: uploadedPhotos.map(photo => photo.data)
-    };
-    
-    console.log('Sending data to API:', listingData);
-    
     try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
+        // Создаем объект с данными объявления
+        const listingData = {
+            phoneModel: phoneModel,
+            condition: condition,
+            description: description || 'Нет описания',
+            desiredPhone: desiredPhone,
+            location: city,
+            userId: currentUser?.id || 'anonymous',
+            userInfo: {
+                name: currentUser?.name || 'Анонимный пользователь',
+                username: currentUser?.username || 'anonymous'
             },
-            body: JSON.stringify(listingData)
-        });
+            photos: uploadedPhotos.map(photo => photo.data),
+            timestamp: new Date().toISOString()
+        };
         
-        console.log('API response status:', response.status);
+        console.log('Sending data to API:', listingData);
         
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+        // Если API недоступно, создаем локальное объявление
+        let result;
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(listingData)
+            });
+            
+            console.log('API response status:', response.status);
+            
+            if (response.ok) {
+                result = await response.json();
+                console.log('API response data:', result);
+            } else {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+        } catch (apiError) {
+            console.warn('API недоступно, создаем локальное объявление:', apiError);
+            
+            // Создаем локальное объявление
+            const localListing = {
+                ...listingData,
+                id: Date.now().toString(),
+                timestamp: new Date().toISOString()
+            };
+            
+            result = {
+                success: true,
+                listing: localListing,
+                message: 'Объявление создано локально (API недоступно)'
+            };
         }
         
-        const result = await response.json();
-        console.log('API response data:', result);
-        
         if (result.success) {
-            // Сохраняем ID созданного объявления для подсветки
-            lastCreatedListingId = result.listing.id;
+            // Добавляем объявление в локальный массив
+            const newListing = result.listing;
+            allListings.unshift(newListing);
+            lastCreatedListingId = newListing.id;
             
-            // Запускаем анимацию успеха и перехода
-            await animateSuccessAndTransition();
+            // Показываем успех
+            showSuccess('✅ Объявление успешно создано!');
             
             // Очищаем форму
             document.getElementById('create-listing-form').reset();
             selectedCity = '';
             uploadedPhotos = [];
-            updatePhotoPreview(); // Теперь эта функция доступна
+            updatePhotoPreview();
+            
+            // Переходим в ленту
+            setTimeout(() => {
+                switchTab('feed');
+                
+                // Обновляем список объявлений
+                updateMyListings();
+                showListings();
+                
+                // Подсвечиваем новое объявление
+                setTimeout(() => {
+                    highlightNewListing();
+                }, 500);
+            }, 1000);
             
         } else {
-            // Ошибка от API
-            throw new Error(result.error || 'Unknown API error');
+            throw new Error(result.error || 'Неизвестная ошибка сервера');
         }
         
     } catch (error) {
@@ -517,124 +553,24 @@ async function createListing() {
     }
 }
 
-// Остальные функции остаются без изменений...
-// [Здесь должны быть все остальные функции из предыдущего кода]
-
-// Анимация успеха и перехода к ленте
-async function animateSuccessAndTransition() {
-    // Создаем анимацию успеха
-    const successAnimation = document.createElement('div');
-    successAnimation.className = 'success-animation';
-    successAnimation.innerHTML = '<div class="success-check">✅</div>';
-    document.body.appendChild(successAnimation);
-    
-    // Ждем завершения анимации успеха
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    // Убираем анимацию успеха
-    successAnimation.remove();
-    
-    // Запускаем анимацию перехода
-    animateToFeed();
-}
-
-// Улучшенная анимация перехода к ленте
-function animateToFeed() {
-    const createTab = document.getElementById('create');
-    const feedTab = document.getElementById('feed');
-    const feedBtn = document.querySelector('[data-tab="feed"]');
-    
-    // Создаем оверлей для перехода
-    const transitionOverlay = document.createElement('div');
-    transitionOverlay.className = 'transition-overlay';
-    document.body.appendChild(transitionOverlay);
-    
-    // Создаем анимацию телефона
-    const phoneAnimation = document.createElement('div');
-    phoneAnimation.className = 'phone-animation';
-    phoneAnimation.innerHTML = '<div class="phone-icon">📱</div>';
-    document.body.appendChild(phoneAnimation);
-    
-    // Создаем частицы
-    createParticles();
-    
-    // Получаем позицию кнопки ленты для анимации
-    const feedBtnRect = feedBtn.getBoundingClientRect();
-    const targetX = feedBtnRect.left + feedBtnRect.width / 2;
-    const targetY = feedBtnRect.top + feedBtnRect.height / 2;
-    
-    // Устанавливаем целевые координаты для анимации
-    phoneAnimation.style.setProperty('--target-x', `${targetX}px`);
-    phoneAnimation.style.setProperty('--target-y', `${targetY}px`);
-    
-    // Ждем завершения анимации
-    setTimeout(() => {
-        // Убираем элементы анимации
-        transitionOverlay.remove();
-        phoneAnimation.remove();
-        
-        // Переключаем вкладки
-        switchTab('feed');
-        
-        // Загружаем обновленные объявления
-        loadListings().then(() => {
-            // После загрузки подсвечиваем новое объявление
-            setTimeout(() => {
-                highlightNewListing();
-            }, 300);
-        });
-    }, 1500);
-}
-
-// Создание частиц для анимации
-function createParticles() {
-    const particleCount = 12;
-    const centerX = window.innerWidth / 2;
-    const centerY = window.innerHeight / 2;
-    
-    for (let i = 0; i < particleCount; i++) {
-        const particle = document.createElement('div');
-        particle.className = 'particle';
-        
-        // Случайный угол и расстояние
-        const angle = (i / particleCount) * Math.PI * 2;
-        const distance = 100 + Math.random() * 50;
-        const tx = Math.cos(angle) * distance;
-        const ty = Math.sin(angle) * distance;
-        
-        particle.style.left = centerX + 'px';
-        particle.style.top = centerY + 'px';
-        particle.style.setProperty('--tx', `${tx}px`);
-        particle.style.setProperty('--ty', `${ty}px`);
-        
-        // Случайная задержка
-        particle.style.animationDelay = (Math.random() * 0.3) + 's';
-        
-        document.body.appendChild(particle);
-        
-        // Удаляем частицу после анимации
-        setTimeout(() => {
-            particle.remove();
-        }, 1000);
-    }
-}
-
-// Подсветка нового объявления
+// Упрощенная функция подсветки нового объявления
 function highlightNewListing() {
     if (lastCreatedListingId) {
-        const newListingElement = document.querySelector(`[data-listing-id="${lastCreatedListingId}"]`);
-        if (newListingElement) {
-            newListingElement.classList.add('new-listing');
-            newListingElement.scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'center' 
-            });
-            
-            // Убираем подсветку через 3 секунды
-            setTimeout(() => {
-                newListingElement.classList.remove('new-listing');
-            }, 3000);
-        }
+        setTimeout(() => {
+            const newListingElement = document.querySelector(`[data-listing-id="${lastCreatedListingId}"]`);
+            if (newListingElement) {
+                newListingElement.classList.add('new-listing');
+                newListingElement.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center' 
+                });
+                
+                // Убираем подсветку через 3 секунды
+                setTimeout(() => {
+                    newListingElement.classList.remove('new-listing');
+                }, 3000);
+            }
+        }, 100);
     }
 }
 
@@ -708,45 +644,60 @@ function switchTab(tabName) {
     currentTab = tabName;
 }
 
-// Показ объявлений в ленте
+// Обновленная функция показа объявлений
 function showListings(listings = allListings, container = document.getElementById('feed-listings')) {
     if (!container) return;
     
-    if (listings.length === 0) {
+    if (!listings || listings.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
                 <h3>📱 Пока нет объявлений</h3>
-                <p>Создайте первое объявление!</p>
+                <p>Будьте первым - создайте объявление!</p>
             </div>
         `;
         return;
     }
     
-    container.innerHTML = listings.map((item, index) => `
+    // Сортируем по дате (новые сначала)
+    const sortedListings = [...listings].sort((a, b) => 
+        new Date(b.timestamp) - new Date(a.timestamp)
+    );
+    
+    container.innerHTML = sortedListings.map((item, index) => {
+        // Безопасное получение данных
+        const phoneModel = item.phoneModel || 'Неизвестная модель';
+        const description = item.description || 'Нет описания';
+        const desiredPhone = item.desiredPhone || 'Любой телефон';
+        const location = item.location || 'Не указан';
+        const userName = item.userInfo?.name || 'Аноним';
+        const timestamp = item.timestamp ? formatTime(item.timestamp) : 'недавно';
+        
+        return `
         <div class="listing-card" data-listing-id="${item.id}" onclick="showListingModal('${item.id}')" style="animation-delay: ${index * 0.1}s">
             <div class="listing-content">
-                <div class="listing-image ${getPhoneBrand(item.phoneModel)}">
+                <div class="listing-image ${getPhoneBrand(phoneModel)}">
                     ${item.photos && item.photos.length > 0 ? 
-                        `<img src="${item.photos[0]}" alt="${item.phoneModel}" style="width:100%;height:100%;object-fit:cover;border-radius:18px;">` : 
-                        `📱<br>${item.phoneModel}`
+                        `<img src="${item.photos[0]}" alt="${phoneModel}" style="width:100%;height:100%;object-fit:cover;border-radius:18px;">` : 
+                        `📱<br>${phoneModel}`
                     }
                 </div>
                 <div class="listing-details">
-                    <div class="listing-title">${item.phoneModel}</div>
-                    <div class="listing-description">${item.description}</div>
-                    <div class="listing-price">→ ${item.desiredPhone}</div>
-                    <div class="listing-location">📍 ${item.location}</div>
+                    <div class="listing-title">${phoneModel}</div>
+                    <div class="listing-description">${description}</div>
+                    <div class="listing-price">→ ${desiredPhone}</div>
+                    <div class="listing-location">📍 ${location}</div>
                     <div class="listing-meta">
                         <div class="user-info">
                             <span class="rating">⭐ 5.0</span>
-                            <span class="user-name">${item.userInfo?.name || 'Аноним'}</span>
+                            <span class="user-name">${userName}</span>
                         </div>
-                        <div class="timestamp">${formatTime(item.timestamp)}</div>
+                        <div class="timestamp">${timestamp}</div>
                     </div>
                 </div>
             </div>
         </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 // Показ моих объявлений в профиле
@@ -767,22 +718,29 @@ function showMyListings() {
         return;
     }
     
-    container.innerHTML = myListings.map((item, index) => `
+    container.innerHTML = myListings.map((item, index) => {
+        const phoneModel = item.phoneModel || 'Неизвестная модель';
+        const description = item.description || 'Нет описания';
+        const desiredPhone = item.desiredPhone || 'Любой телефон';
+        const location = item.location || 'Не указан';
+        const timestamp = item.timestamp ? formatTime(item.timestamp) : 'недавно';
+        
+        return `
         <div class="listing-card" data-listing-id="${item.id}" style="animation-delay: ${index * 0.1}s">
             <div class="listing-content">
-                <div class="listing-image ${getPhoneBrand(item.phoneModel)}">
+                <div class="listing-image ${getPhoneBrand(phoneModel)}">
                     ${item.photos && item.photos.length > 0 ? 
-                        `<img src="${item.photos[0]}" alt="${item.phoneModel}" style="width:100%;height:100%;object-fit:cover;border-radius:18px;">` : 
-                        `📱<br>${item.phoneModel}`
+                        `<img src="${item.photos[0]}" alt="${phoneModel}" style="width:100%;height:100%;object-fit:cover;border-radius:18px;">` : 
+                        `📱<br>${phoneModel}`
                     }
                 </div>
                 <div class="listing-details">
-                    <div class="listing-title">${item.phoneModel}</div>
-                    <div class="listing-description">${item.description}</div>
-                    <div class="listing-price">→ ${item.desiredPhone}</div>
-                    <div class="listing-location">📍 ${item.location}</div>
+                    <div class="listing-title">${phoneModel}</div>
+                    <div class="listing-description">${description}</div>
+                    <div class="listing-price">→ ${desiredPhone}</div>
+                    <div class="listing-location">📍 ${location}</div>
                     <div class="listing-meta">
-                        <div class="timestamp">${formatTime(item.timestamp)}</div>
+                        <div class="timestamp">${timestamp}</div>
                     </div>
                     <div class="my-listing-actions">
                         <button type="button" class="btn btn-secondary" onclick="editListing('${item.id}')">✏️ Редактировать</button>
@@ -791,7 +749,8 @@ function showMyListings() {
                 </div>
             </div>
         </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 // Показ активных сделок
@@ -861,6 +820,19 @@ function hideMyListings() {
     if (section) {
         section.style.display = 'none';
     }
+}
+
+// Переключиться на вкладку моих объявлений (для кнопки в профиле)
+function showMyListingsTab() {
+    showTab('profile');
+    setTimeout(() => {
+        showMyListings();
+    }, 500);
+}
+
+// Показать активные сделки
+function showActiveExchanges() {
+    showTab('exchanges');
 }
 
 // Уведомления
@@ -1139,4 +1111,15 @@ window.onclick = function(event) {
             modal.style.display = 'none';
         }
     });
+}
+
+// Функция для отладки - показывает текущее состояние
+function debugState() {
+    console.log('=== DEBUG INFO ===');
+    console.log('Current User:', currentUser);
+    console.log('All Listings:', allListings);
+    console.log('My Listings:', myListings);
+    console.log('Uploaded Photos:', uploadedPhotos);
+    console.log('Selected City:', selectedCity);
+    console.log('==================');
 }
