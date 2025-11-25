@@ -755,7 +755,7 @@ body {
     margin-top: 8px;
     max-height: 200px;
     overflow-y: auto;
-    z-index: 10;
+    z-index: 1000;
     box-shadow: 
         8px 8px 16px var(--shadow-dark),
         -8px -8px 16px var(--shadow-light);
@@ -1072,7 +1072,7 @@ body {
 .modal {
     display: none;
     position: fixed;
-    z-index: 1000;
+    z-index: 2000;
     left: 0;
     top: 0;
     width: 100%;
@@ -1649,77 +1649,4 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
     background: var(--accent-light);
-}
-
-/* Добавьте эти стили в конец вашего файла style.css */
-
-/* Исправление для списка городов */
-.city-selector {
-    position: relative;
-}
-
-.cities-list {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background: var(--primary);
-    border-radius: 18px;
-    margin-top: 8px;
-    max-height: 200px;
-    overflow-y: auto;
-    z-index: 1000;
-    box-shadow: 
-        8px 8px 16px var(--shadow-dark),
-        -8px -8px 16px var(--shadow-light);
-    display: none;
-    animation: citiesListAppear 0.3s ease;
-}
-
-.cities-list.active {
-    display: block;
-}
-
-.city-item {
-    padding: 15px 20px;
-    cursor: pointer;
-    transition: var(--transition);
-    border-bottom: 1px solid rgba(160, 174, 192, 0.2);
-    font-weight: 500;
-}
-
-.city-item:last-child {
-    border-bottom: none;
-}
-
-.city-item:hover {
-    background: var(--accent);
-    color: white;
-}
-
-.city-item.selected {
-    background: var(--accent-light);
-    color: white;
-    font-weight: 600;
-}
-
-/* Убедимся, что модальные окна имеют правильный z-index */
-.modal {
-    z-index: 2000;
-}
-
-.modal-content {
-    z-index: 2001;
-}
-
-/* Анимация для списка городов */
-@keyframes citiesListAppear {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
 }

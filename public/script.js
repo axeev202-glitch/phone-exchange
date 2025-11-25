@@ -33,26 +33,6 @@ const cities = [
     'Владивосток', 'Махачкала', 'Томск', 'Оренбург', 'Кемерово'
 ];
 
-// Демо данные для активных сделок
-const demoExchanges = [
-    {
-        id: '1',
-        status: 'active',
-        myPhone: 'iPhone 14 Pro',
-        theirPhone: 'Samsung S23',
-        theirUser: '@samsung_lover',
-        timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
-    },
-    {
-        id: '2',
-        status: 'pending',
-        myPhone: 'Xiaomi Redmi Note 10',
-        theirPhone: 'Google Pixel 6',
-        theirUser: '@pixel_fan',
-        timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
-    }
-];
-
 // Инициализация
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, initializing app...');
@@ -388,8 +368,10 @@ async function loadListings() {
         
     } catch (error) {
         console.error('Ошибка загрузки объявлений:', error);
-        showError('Не удалось загрузить объявления. Показываем демо данные.');
-        showDemoListings();
+        showError('Не удалось загрузить объявления');
+        // Не показываем демо данные - только пустой список
+        allListings = [];
+        showListings();
     }
 }
 
@@ -458,7 +440,7 @@ async function createListing() {
             name: currentUser?.name,
             username: currentUser?.username
         },
-        photos: uploadedPhotos.map(photo => photo.data) // В реальном приложении нужно загружать на сервер
+        photos: uploadedPhotos.map(photo => photo.data)
     };
     
     console.log('Sending data to API:', listingData);
@@ -829,40 +811,6 @@ function showActiveExchanges() {
             </div>
         </div>
     `).join('');
-}
-
-// Демо данные при ошибке загрузки
-function showDemoListings() {
-    const container = document.getElementById('feed-listings');
-    if (!container) return;
-    
-    const demoListings = [
-        {
-            id: 'demo1',
-            phoneModel: 'iPhone 14 Pro',
-            condition: 'excellent',
-            description: 'Отличное состояние, батарея 95%',
-            desiredPhone: 'Samsung S23',
-            location: 'Москва',
-            timestamp: new Date().toISOString(),
-            userId: 'demo_user_1',
-            userInfo: { name: 'Иван Петров', username: 'ivan_tech' }
-        },
-        {
-            id: 'demo2',
-            phoneModel: 'Samsung Galaxy S23',
-            condition: 'new',
-            description: 'Новый, в коробке, все чеки',
-            desiredPhone: 'iPhone 15',
-            location: 'Санкт-Петербург',
-            timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-            userId: 'demo_user_2',
-            userInfo: { name: 'Анна Сидорова', username: 'anna_mobile' }
-        }
-    ];
-    
-    allListings = demoListings;
-    showListings();
 }
 
 // Показать мои объявления в профиле
