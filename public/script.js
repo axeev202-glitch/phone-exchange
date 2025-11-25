@@ -1,8 +1,8 @@
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-// URL API на хостинге
-const API_BASE_URL = 'https://phone-exchange.vercel.app//api';
+// URL API на хостинге - ЗАМЕНИ НА СВОЙ URL
+const API_BASE_URL = 'https://phone-exchange.vercel.app/api';
 const LISTINGS_API_URL = `${API_BASE_URL}/listings`;
 const EXCHANGES_API_URL = `${API_BASE_URL}/exchanges`;
 
@@ -377,6 +377,7 @@ async function loadListings() {
     console.log('Loading listings from server...');
     
     try {
+        showLoading(true);
         const response = await fetch(LISTINGS_API_URL, {
             method: 'GET',
             headers: {
@@ -400,6 +401,8 @@ async function loadListings() {
         showError('Не удалось загрузить объявления с сервера');
         allListings = [];
         showListings();
+    } finally {
+        showLoading(false);
     }
 }
 
@@ -858,6 +861,13 @@ function showError(message) {
     }
 }
 
+function showLoading(show) {
+    const loading = document.getElementById('loading');
+    if (loading) {
+        loading.style.display = show ? 'flex' : 'none';
+    }
+}
+
 // Вспомогательные функции
 function getPhoneBrand(model) {
     if (!model) return 'iphone';
@@ -905,6 +915,7 @@ async function confirmDelete() {
     if (!listingToDelete) return;
     
     try {
+        showLoading(true);
         // Отправляем запрос на удаление на сервер
         const response = await fetch(`${LISTINGS_API_URL}/${listingToDelete}`, {
             method: 'DELETE',
@@ -920,13 +931,8 @@ async function confirmDelete() {
         const result = await response.json();
         
         if (result.success) {
-            // Обновляем локальный список
-            allListings = allListings.filter(listing => listing.id !== listingToDelete);
-            
-            // Обновляем интерфейс
-            updateMyListings();
-            showListings();
-            
+            // Перезагружаем объявления с сервера
+            await loadListings();
             showSuccess('Объявление успешно удалено!');
         } else {
             throw new Error(result.error || 'Ошибка при удалении');
@@ -937,6 +943,8 @@ async function confirmDelete() {
     } catch (error) {
         console.error('Ошибка при удалении объявления:', error);
         showError('Ошибка при удалении объявления');
+    } finally {
+        showLoading(false);
     }
 }
 
@@ -951,12 +959,9 @@ async function acceptExchange(exchangeId) {
         });
         
         if (response.ok) {
-            const exchange = activeExchanges.find(e => e.id === exchangeId);
-            if (exchange) {
-                exchange.status = 'active';
-                showActiveExchanges();
-                showSuccess('Сделка принята!');
-            }
+            // Перезагружаем сделки с сервера
+            await loadActiveExchanges();
+            showSuccess('Сделка принята!');
         } else {
             throw new Error('Ошибка сервера');
         }
@@ -975,8 +980,8 @@ async function declineExchange(exchangeId) {
         });
         
         if (response.ok) {
-            activeExchanges = activeExchanges.filter(e => e.id !== exchangeId);
-            showActiveExchanges();
+            // Перезагружаем сделки с сервера
+            await loadActiveExchanges();
             showSuccess('Сделка отклонена');
         } else {
             throw new Error('Ошибка сервера');
@@ -996,13 +1001,9 @@ async function completeExchange(exchangeId) {
         });
         
         if (response.ok) {
-            const exchange = activeExchanges.find(e => e.id === exchangeId);
-            if (exchange) {
-                exchange.status = 'completed';
-                showActiveExchanges();
-                showSuccess('Сделка завершена!');
-                updateMyListings();
-            }
+            // Перезагружаем сделки с сервера
+            await loadActiveExchanges();
+            showSuccess('Сделка завершена!');
         } else {
             throw new Error('Ошибка сервера');
         }
