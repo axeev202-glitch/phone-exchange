@@ -2,7 +2,7 @@ const tg = window.Telegram.WebApp;
 tg.expand();
 
 // URL API на хостинге - ЗАМЕНИ НА СВОЙ URL
-const API_BASE_URL = 'https://phone-exchange.vercel.app/api';
+const API_BASE_URL = 'https://phone-exchange.vercel.app//api';
 const LISTINGS_API_URL = `${API_BASE_URL}/listings`;
 const EXCHANGES_API_URL = `${API_BASE_URL}/exchanges`;
 
