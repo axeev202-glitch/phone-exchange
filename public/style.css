@@ -1651,6 +1651,8 @@ body {
     background: var(--accent-light);
 }
 
+/* Добавьте эти стили в конец вашего файла style.css */
+
 /* Исправление для списка городов */
 .city-selector {
     position: relative;
@@ -1666,7 +1668,7 @@ body {
     margin-top: 8px;
     max-height: 200px;
     overflow-y: auto;
-    z-index: 1000; /* Увеличиваем z-index */
+    z-index: 1000;
     box-shadow: 
         8px 8px 16px var(--shadow-dark),
         -8px -8px 16px var(--shadow-light);
@@ -1678,11 +1680,46 @@ body {
     display: block;
 }
 
-/* Убедимся, что модальные окна имеют еще больший z-index */
+.city-item {
+    padding: 15px 20px;
+    cursor: pointer;
+    transition: var(--transition);
+    border-bottom: 1px solid rgba(160, 174, 192, 0.2);
+    font-weight: 500;
+}
+
+.city-item:last-child {
+    border-bottom: none;
+}
+
+.city-item:hover {
+    background: var(--accent);
+    color: white;
+}
+
+.city-item.selected {
+    background: var(--accent-light);
+    color: white;
+    font-weight: 600;
+}
+
+/* Убедимся, что модальные окна имеют правильный z-index */
 .modal {
     z-index: 2000;
 }
 
 .modal-content {
     z-index: 2001;
+}
+
+/* Анимация для списка городов */
+@keyframes citiesListAppear {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
