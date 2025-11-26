@@ -384,6 +384,12 @@ body {
     display: flex;
     align-items: center;
     gap: 14px;
+    padding: 12px 14px;
+    border-radius: 20px;
+    background: #e3e6ee;
+    box-shadow:
+        inset 4px 4px 8px rgba(163, 177, 198, 0.6),
+        inset -4px -4px 8px rgba(255, 255, 255, 0.9);
 }
 
 .avatar-upload-preview {
@@ -395,9 +401,29 @@ body {
         -6px -6px 12px rgba(255, 255, 255, 0.95);
 }
 
+.avatar-upload-control {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    cursor: pointer;
+}
+
+.avatar-upload-title {
+    font-size: 0.9em;
+    font-weight: 600;
+    color: #222;
+}
+
+.avatar-upload-subtitle {
+    font-size: 0.75em;
+    color: #6c7a92;
+}
+
 .avatar-upload input[type="file"] {
     font-size: 0.8em;
     color: #6c7a92;
+    margin-top: 4px;
 }
 
 .profile-card h3 {

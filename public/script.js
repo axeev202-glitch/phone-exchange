@@ -980,6 +980,14 @@ function confirmExchange() {
     }
 }
 
+function openSellerProfileFromModal() {
+    if (!currentExchangeTargetId) {
+        showError('Не удалось определить продавца для профиля.');
+        return;
+    }
+    openUserProfileByTelegram(currentExchangeTargetId);
+}
+
 async function submitReview() {
     if (!currentExchangeTargetId || !currentUser) {
         showError('Не удалось определить пользователя для отзыва.');
@@ -1035,6 +1043,10 @@ async function openUserProfileByTelegram(telegramId) {
         ]);
 
         if (!profileResp.ok) {
+            if (profileResp.status === 404) {
+                showError('Пользователь ещё не создавал профиль в мини‑аппе.');
+                return;
+            }
             throw new Error('Profile not found');
         }
 
