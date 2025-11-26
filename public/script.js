@@ -130,8 +130,8 @@ async function loadListings() {
         
     } catch (error) {
         console.error('Ошибка загрузки объявлений:', error);
-        showError('Не удалось загрузить объявления с сервера. Показываем демо данные.');
-        showDemoListings();
+        showError('Не удалось загрузить объявления с сервера.');
+        // В случае ошибки просто оставляем текущий список (может быть пустым)
     }
 }
 
@@ -364,52 +364,7 @@ function showListings() {
     `).join('');
 }
 
-// Демо данные при ошибке загрузки
-function showDemoListings() {
-    const container = document.querySelector('.listings-container');
-    if (!container) return;
-    
-    container.innerHTML = `
-        <div class="listing-card" onclick="showListingModal('demo1')">
-            <div class="listing-content">
-                <div class="listing-image iphone">
-                    📱<br>iPhone 14 Pro
-                </div>
-                <div class="listing-details">
-                    <div class="listing-title">iPhone 14 Pro</div>
-                    <div class="listing-description">Отличное состояние, батарея 95%</div>
-                    <div class="listing-price">→ Samsung S23</div>
-                    <div class="listing-location">📍 Москва</div>
-                    <div class="listing-meta">
-                        <div class="user-info">
-                            <span class="rating">⭐ 5.0</span>
-                        </div>
-                        <div class="timestamp">только что</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="listing-card" onclick="showListingModal('demo2')">
-            <div class="listing-content">
-                <div class="listing-image samsung">
-                    📱<br>Samsung S23
-                </div>
-                <div class="listing-details">
-                    <div class="listing-title">Samsung Galaxy S23</div>
-                    <div class="listing-description">Новый, в коробке</div>
-                    <div class="listing-price">→ iPhone 15</div>
-                    <div class="listing-location">📍 Санкт-Петербург</div>
-                    <div class="listing-meta">
-                        <div class="user-info">
-                            <span class="rating">⭐ 4.8</span>
-                        </div>
-                        <div class="timestamp">2 часа назад</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-}
+// Раньше тут были демо‑данные. Теперь показываем только реальные объявления от пользователей.
 
 // Уведомления
 function showSuccess(message) {
