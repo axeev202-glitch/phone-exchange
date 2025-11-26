@@ -20,6 +20,8 @@ console.log('API URL:', API_URL);
 let currentUser = null;
 let currentProfile = null;
 let allListings = [];
+let filteredListings = [];
+let searchQuery = '';
 let lastCreatedListingId = null;
 let selectedPhotoFiles = [];
 let currentListingImages = [];
@@ -352,6 +354,16 @@ function setupButtons() {
             reader.readAsDataURL(file);
         });
     }
+    
+    // Поиск объявлений
+    const searchInput = document.querySelector('.search-input');
+    if (searchInput) {
+        searchInput.addEventListener('input', function(e) {
+            searchQuery = e.target.value.trim().toLowerCase();
+            filterListings();
+            showListings();
+        });
+    }
 }
 
 // Загрузка профиля пользователя по telegramId
@@ -413,6 +425,8 @@ async function loadListings() {
             rating: userRatingsMap[listing.userId] || 0
         }));
         
+        // Инициализируем отфильтрованные объявления
+        filterListings();
         showListings();
         updateProfileStats();
         
@@ -485,8 +499,36 @@ async function createListing() {
         });
         
         console.log('API response status:', response.status);
+        console.log('API response headers:', response.headers.get('content-type'));
         
-        const result = await response.json();
+        // Проверяем Content-Type перед парсингом
+        const contentType = response.headers.get('content-type');
+        let result;
+        
+        if (contentType && contentType.includes('application/json')) {
+            // Пытаемся получить текст ответа для отладки
+            const responseText = await response.text();
+            console.log('API response text:', responseText.substring(0, 200));
+            
+            try {
+                result = JSON.parse(responseText);
+            } catch (parseError) {
+                console.error('JSON parse error:', parseError);
+                console.error('Response text:', responseText);
+                throw new Error(`Сервер вернул неверный формат данных. Попробуйте позже или уменьшите размер фотографий.`);
+            }
+        } else {
+            // Если ответ не JSON, читаем как текст
+            const responseText = await response.text();
+            console.error('Non-JSON response:', responseText.substring(0, 200));
+            
+            if (response.status >= 400) {
+                throw new Error(`Ошибка сервера (${response.status}). Попробуйте позже или уменьшите размер фотографий.`);
+            } else {
+                throw new Error('Сервер вернул неожиданный формат данных.');
+            }
+        }
+        
         console.log('API response data:', result);
         
         if (response.ok && result.success) {
@@ -504,12 +546,24 @@ async function createListing() {
             
         } else {
             // Ошибка от API
-            throw new Error(result.error || 'Unknown API error');
+            const errorMessage = result.error || result.message || 'Неизвестная ошибка API';
+            throw new Error(errorMessage);
         }
         
     } catch (error) {
         console.error('Ошибка при создании объявления:', error);
-        showError(`❌ Ошибка при создании объявления: ${error.message}`);
+        
+        // Более понятное сообщение об ошибке
+        let errorMessage = error.message;
+        if (error.message.includes('JSON') || error.message.includes('parse')) {
+            errorMessage = 'Ошибка обработки данных. Попробуйте уменьшить размер фотографий или создать объявление без фото.';
+        } else if (error.message.includes('413') || error.message.includes('too large')) {
+            errorMessage = 'Фотографии слишком большие. Выберите изображения меньшего размера.';
+        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+            errorMessage = 'Проблема с интернет-соединением. Проверьте подключение и попробуйте снова.';
+        }
+        
+        showError(`❌ Ошибка при создании объявления: ${errorMessage}`);
     } finally {
         // Скрываем индикатор загрузки
         btnText.style.display = 'block';
@@ -633,22 +687,45 @@ function highlightNewListing() {
     }
 }
 
+// Фильтрация объявлений по поисковому запросу
+function filterListings() {
+    if (!searchQuery) {
+        filteredListings = [...allListings];
+        return;
+    }
+    
+    filteredListings = allListings.filter(item => {
+        const searchLower = searchQuery.toLowerCase();
+        const phoneModel = (item.phoneModel || '').toLowerCase();
+        const desiredPhone = (item.desiredPhone || '').toLowerCase();
+        const description = (item.description || '').toLowerCase();
+        const location = (item.location || '').toLowerCase();
+        
+        return (
+            phoneModel.includes(searchLower) ||
+            desiredPhone.includes(searchLower) ||
+            description.includes(searchLower) ||
+            location.includes(searchLower)
+        );
+    });
+}
+
 // Показ объявлений
 function showListings() {
     const container = document.querySelector('.listings-container');
     if (!container) return;
     
-    if (allListings.length === 0) {
+    if (filteredListings.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
-                <h3>📱 Пока нет объявлений</h3>
-                <p>Создайте первое объявление!</p>
+                <h3>${searchQuery ? '🔍 Ничего не найдено' : '📱 Пока нет объявлений'}</h3>
+                <p>${searchQuery ? 'Попробуйте изменить поисковый запрос' : 'Создайте первое объявление!'}</p>
             </div>
         `;
         return;
     }
     
-    container.innerHTML = allListings.map(item => `
+    container.innerHTML = filteredListings.map(item => `
         <div class="listing-card" onclick="showListingModal('${item.id}')">
             <div class="listing-content">
                 <div class="listing-image ${getPhoneBrand(item.phoneModel)}">
@@ -987,9 +1064,32 @@ function showMyReviews() {
     modal.style.display = 'block';
 }
 
+// Открытие объявления с переходом на ленту
+function showListingFromProfile(listingId) {
+    // Переключаемся на вкладку ленты
+    showTab('feed');
+    
+    // Ждем немного, чтобы лента загрузилась, затем открываем модалку
+    setTimeout(() => {
+        showListingModal(listingId);
+    }, 300);
+}
+
 function showListingModal(listingId) {
     const listing = allListings.find(item => item.id === listingId);
-    if (!listing) return;
+    if (!listing) {
+        // Если не найдено в allListings, попробуем найти в filteredListings
+        const listingInFiltered = filteredListings.find(item => item.id === listingId);
+        if (listingInFiltered) {
+            // Перезагружаем объявления, чтобы найти нужное
+            loadListings().then(() => {
+                setTimeout(() => showListingModal(listingId), 200);
+            });
+            return;
+        }
+        showError('Объявление не найдено');
+        return;
+    }
 
     // Сохраняем пользователя для возможного отзыва после сделки
     currentExchangeTargetId = listing.userId || null;
@@ -1292,7 +1392,7 @@ function renderUserProfileModal(profile, listings) {
             listingsEl.innerHTML = activeListings
                 .map(
                     item => `
-                <div class="listing-card mini" onclick="showListingModal('${item.id}')">
+                <div class="listing-card mini" onclick="showListingFromProfile('${item.id}')">
                     <div class="listing-content">
                         <div class="listing-image ${getPhoneBrand(
                             item.phoneModel
