@@ -169,6 +169,50 @@ function updateProfile() {
     }
 }
 
+// Сжатие изображения
+function compressImage(file, maxWidth = 1200, maxHeight = 1200, quality = 0.8) {
+    return new Promise((resolve, reject) => {
+        // Если файл не изображение, возвращаем как есть
+        if (!file.type.startsWith('image/')) {
+            readFileAsDataUrl(file).then(resolve).catch(reject);
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                // Вычисляем новые размеры с сохранением пропорций
+                let width = img.width;
+                let height = img.height;
+
+                if (width > maxWidth || height > maxHeight) {
+                    const ratio = Math.min(maxWidth / width, maxHeight / height);
+                    width = width * ratio;
+                    height = height * ratio;
+                }
+
+                // Создаем canvas для сжатия
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+
+                // Рисуем изображение на canvas
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Конвертируем в base64 с заданным качеством
+                const compressedDataUrl = canvas.toDataURL(file.type, quality);
+                resolve(compressedDataUrl);
+            };
+            img.onerror = reject;
+            img.src = e.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
 // Чтение файла как data URL (base64)
 function readFileAsDataUrl(file) {
     return new Promise((resolve, reject) => {
@@ -457,16 +501,31 @@ async function createListing() {
         return;
     }
 
-    // Читаем фото в base64 (если выбраны)
+    // Читаем и сжимаем фото в base64 (если выбраны)
     let imagesData = [];
     if (selectedPhotoFiles.length > 0) {
         try {
+            console.log('Compressing images...');
             imagesData = await Promise.all(
-                selectedPhotoFiles.map(file => readFileAsDataUrl(file))
+                selectedPhotoFiles.map(file => {
+                    console.log(`Compressing ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
+                    return compressImage(file, 1200, 1200, 0.75);
+                })
             );
+            
+            // Проверяем размер данных после сжатия
+            const totalSize = imagesData.reduce((sum, dataUrl) => {
+                return sum + (dataUrl.length * 3) / 4; // Примерный размер base64
+            }, 0);
+            console.log(`Total compressed size: ${(totalSize / 1024 / 1024).toFixed(2)} MB`);
+            
+            // Если данные все еще слишком большие, предупреждаем
+            if (totalSize > 4 * 1024 * 1024) { // Больше 4MB
+                console.warn('Compressed images are still large, may cause issues');
+            }
         } catch (fileError) {
-            console.error('Ошибка чтения файла(ов) фото:', fileError);
-            showError('Не удалось прочитать файл(ы) фото. Попробуйте другое изображение.');
+            console.error('Ошибка чтения/сжатия файла(ов) фото:', fileError);
+            showError('Не удалось обработать файл(ы) фото. Попробуйте другое изображение.');
             return;
         }
     }
@@ -501,29 +560,34 @@ async function createListing() {
         console.log('API response status:', response.status);
         console.log('API response headers:', response.headers.get('content-type'));
         
-        // Проверяем Content-Type перед парсингом
+        // Получаем текст ответа один раз
+        const responseText = await response.text();
         const contentType = response.headers.get('content-type');
         let result;
         
         if (contentType && contentType.includes('application/json')) {
-            // Пытаемся получить текст ответа для отладки
-            const responseText = await response.text();
-            console.log('API response text:', responseText.substring(0, 200));
-            
+            // Пытаемся распарсить как JSON
             try {
                 result = JSON.parse(responseText);
+                console.log('API response data parsed successfully');
             } catch (parseError) {
                 console.error('JSON parse error:', parseError);
-                console.error('Response text:', responseText);
+                console.error('Response text (first 500 chars):', responseText.substring(0, 500));
                 throw new Error(`Сервер вернул неверный формат данных. Попробуйте позже или уменьшите размер фотографий.`);
             }
         } else {
-            // Если ответ не JSON, читаем как текст
-            const responseText = await response.text();
-            console.error('Non-JSON response:', responseText.substring(0, 200));
+            // Если ответ не JSON, выводим ошибку
+            console.error('Non-JSON response:', responseText.substring(0, 500));
             
             if (response.status >= 400) {
-                throw new Error(`Ошибка сервера (${response.status}). Попробуйте позже или уменьшите размер фотографий.`);
+                // Пытаемся извлечь сообщение об ошибке из HTML или текста
+                let errorMessage = `Ошибка сервера (${response.status})`;
+                if (responseText.includes('Request Entity Too Large') || responseText.includes('413')) {
+                    errorMessage = 'Фотографии слишком большие. Выберите изображения меньшего размера.';
+                } else if (responseText.includes('timeout') || responseText.includes('Timeout')) {
+                    errorMessage = 'Превышено время ожидания. Попробуйте позже или уменьшите размер фотографий.';
+                }
+                throw new Error(errorMessage);
             } else {
                 throw new Error('Сервер вернул неожиданный формат данных.');
             }
