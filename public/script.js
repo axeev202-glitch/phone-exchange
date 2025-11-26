@@ -11,8 +11,8 @@ const apiBase = apiBaseOverride && apiBaseOverride.length > 0
   : (isLocalhost ? 'http://localhost:3000' : window.location.origin);
 const API_URL = `${apiBase.replace(/\/$/, '')}/api/listings`;
 const USERS_API_URL = `${apiBase.replace(/\/$/, '')}/api/users`;
-// Укажи здесь username своего бота, чтобы ссылка «Поделиться профилем» открывала мини‑апп внутри Telegram
-const BOT_USERNAME = 'YOUR_BOT_USERNAME_HERE';
+// Username бота для открытия мини‑аппа по ссылке профиля
+const BOT_USERNAME = 'ObmenTech_bot';
 
 console.log('API URL:', API_URL);
 
@@ -1075,6 +1075,9 @@ function renderUserProfileModal(profile, listings) {
     const modal = document.getElementById('user-profile-modal');
     if (!modal) return;
 
+    // Запоминаем этого пользователя как текущую цель для отзыва
+    currentExchangeTargetId = profile.telegramId || null;
+
     const nameEl = document.getElementById('user-profile-name');
     const usernameEl = document.getElementById('user-profile-username');
     const ratingEl = document.getElementById('user-profile-rating');
@@ -1184,6 +1187,17 @@ function renderUserProfileModal(profile, listings) {
     }
 
     modal.style.display = 'block';
+}
+
+function openReviewForCurrentProfile() {
+    if (!currentExchangeTargetId || !currentUser) {
+        showError('Не удалось определить пользователя для отзыва.');
+        return;
+    }
+    const reviewModal = document.getElementById('review-modal');
+    if (reviewModal) {
+        reviewModal.style.display = 'block';
+    }
 }
 
 function shareMyProfile() {
