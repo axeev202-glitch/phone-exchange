@@ -596,6 +596,13 @@ async function createListing() {
         desiredPhone: desiredPhone,
         location: location,
         userId: currentUser?.id,
+        userInfo: currentUser ? {
+            username: currentUser.username,
+            name: currentUser.name,
+            firstName: currentUser.firstName,
+            lastName: currentUser.lastName,
+            photoUrl: currentUser.photoUrl
+        } : {},
         image: imagesData[0] || null,
         images: imagesData
     };
@@ -1438,25 +1445,52 @@ async function openUserProfileByTelegram(telegramId) {
     console.log('Opening profile by telegramId:', telegramId);
     
     try {
-        const [profileResp, listingsResp] = await Promise.all([
-            fetch(`${USERS_API_URL}?telegramId=${encodeURIComponent(telegramId)}`),
-            fetch(`${API_URL}?userId=${encodeURIComponent(telegramId)}`)
-        ]);
-
-        if (!profileResp.ok) {
-            if (profileResp.status === 404) {
-                showError('Пользователь ещё не создавал профиль в мини‑аппе.');
-                return;
-            }
-            throw new Error(`Profile API error: ${profileResp.status}`);
-        }
-
-        const profile = await profileResp.json();
-        console.log('Profile loaded:', profile);
-        
+        // Сначала пытаемся загрузить объявления, чтобы получить информацию о пользователе
+        const listingsResp = await fetch(`${API_URL}?userId=${encodeURIComponent(telegramId)}`);
         const listings = listingsResp.ok ? await listingsResp.json() : [];
+        
+        // Пытаемся загрузить профиль
+        let profileResp = await fetch(`${USERS_API_URL}?telegramId=${encodeURIComponent(telegramId)}`);
+        
+        let profile;
+        
+        // Если профиль не найден, создаем его автоматически
+        if (!profileResp.ok && profileResp.status === 404) {
+            console.log('Profile not found, creating automatically...');
+            
+            // Пытаемся получить информацию о пользователе из объявлений
+            const firstListing = listings.length > 0 ? listings[0] : null;
+            const userInfo = firstListing?.userInfo || {};
+            
+            // Создаем профиль с базовыми данными
+            const createProfileResp = await fetch(USERS_API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: 'init',
+                    telegramId: telegramId,
+                    username: userInfo.username || null,
+                    name: userInfo.name || userInfo.firstName || `Пользователь ${telegramId}`,
+                    avatar: userInfo.photoUrl || userInfo.avatar || null
+                })
+            });
+            
+            if (!createProfileResp.ok) {
+                throw new Error(`Failed to create profile: ${createProfileResp.status}`);
+            }
+            
+            profile = await createProfileResp.json();
+            console.log('Profile created automatically:', profile);
+        } else if (!profileResp.ok) {
+            throw new Error(`Profile API error: ${profileResp.status}`);
+        } else {
+            profile = await profileResp.json();
+            console.log('Profile loaded:', profile);
+        }
+        
         console.log('Listings loaded:', listings.length);
-
         renderUserProfileModal(profile, listings);
     } catch (error) {
         console.error('Ошибка открытия профиля пользователя:', error);
