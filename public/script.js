@@ -30,26 +30,35 @@ let currentAvatarData = null;
 // Инициализация
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, initializing app...');
-    initApp();
-
+    
     // Открытие профиля по ссылке ?profile=ID (веб-версия)
     const params = new URLSearchParams(window.location.search);
     const profileFromLink = params.get('profile');
-    if (profileFromLink) {
-        setTimeout(() => openUserProfileByPublicId(profileFromLink), 500);
-        return;
-    }
-
+    
     // Открытие профиля через startapp (Telegram Mini App)
-    // Параметр startapp передаётся через tg.initDataUnsafe.start_param
     const startParam = tg.initDataUnsafe?.start_param;
-    if (startParam && startParam.startsWith('profile_')) {
-        const publicId = startParam.replace('profile_', '');
-        setTimeout(() => openUserProfileByPublicId(publicId), 500);
-    }
+    console.log('Start param from Telegram:', startParam);
+    console.log('Profile from URL:', profileFromLink);
+    
+    initApp().then(() => {
+        // После инициализации проверяем параметры
+        if (profileFromLink) {
+            console.log('Opening profile from URL param:', profileFromLink);
+            setTimeout(() => openUserProfileByPublicId(profileFromLink), 500);
+            return;
+        }
+
+        if (startParam && startParam.startsWith('profile_')) {
+            const publicId = startParam.replace('profile_', '');
+            console.log('Opening profile from startapp:', publicId);
+            setTimeout(() => {
+                openUserProfileByPublicId(publicId);
+            }, 800);
+        }
+    });
 });
 
-function initApp() {
+async function initApp() {
     console.log('Initializing app...');
     
     // Получаем пользователя из Telegram
@@ -75,16 +84,15 @@ function initApp() {
     }
     
     // Инициализируем профиль пользователя на сервере
-    initUserProfile()
-        .then(() => {
-            updateProfile();
-            loadListings();
-        })
-        .catch(error => {
-            console.error('Ошибка инициализации профиля:', error);
-            updateProfile();
-            loadListings();
-        });
+    try {
+        await initUserProfile();
+        updateProfile();
+        await loadListings();
+    } catch (error) {
+        console.error('Ошибка инициализации профиля:', error);
+        updateProfile();
+        await loadListings();
+    }
     
     // Настраиваем кнопки
     setupButtons();
@@ -1157,6 +1165,13 @@ async function submitReview() {
 }
 
 async function openUserProfileByTelegram(telegramId) {
+    if (!telegramId) {
+        showError('ID пользователя не указан.');
+        return;
+    }
+    
+    console.log('Opening profile by telegramId:', telegramId);
+    
     try {
         const [profileResp, listingsResp] = await Promise.all([
             fetch(`${USERS_API_URL}?telegramId=${encodeURIComponent(telegramId)}`),
@@ -1168,39 +1183,61 @@ async function openUserProfileByTelegram(telegramId) {
                 showError('Пользователь ещё не создавал профиль в мини‑аппе.');
                 return;
             }
-            throw new Error('Profile not found');
+            throw new Error(`Profile API error: ${profileResp.status}`);
         }
 
         const profile = await profileResp.json();
+        console.log('Profile loaded:', profile);
+        
         const listings = listingsResp.ok ? await listingsResp.json() : [];
+        console.log('Listings loaded:', listings.length);
 
         renderUserProfileModal(profile, listings);
     } catch (error) {
         console.error('Ошибка открытия профиля пользователя:', error);
-        showError('Не удалось открыть профиль пользователя.');
+        showError(`Не удалось открыть профиль пользователя: ${error.message}`);
     }
 }
 
 async function openUserProfileByPublicId(publicId) {
+    if (!publicId) {
+        console.error('PublicId is empty');
+        return;
+    }
+    
+    console.log('Opening profile by publicId:', publicId);
+    
     try {
         const profileResp = await fetch(
             `${USERS_API_URL}?publicId=${encodeURIComponent(publicId)}`
         );
 
         if (!profileResp.ok) {
-            throw new Error('Profile not found');
+            if (profileResp.status === 404) {
+                showError('Профиль не найден. Проверьте правильность ссылки.');
+                return;
+            }
+            throw new Error(`Profile API error: ${profileResp.status}`);
         }
 
         const profile = await profileResp.json();
+        console.log('Profile loaded by publicId:', profile);
+        
+        if (!profile.telegramId) {
+            showError('Профиль найден, но не содержит данных пользователя.');
+            return;
+        }
+        
         const listingsResp = await fetch(
-            `${API_URL}?userId=${encodeURIComponent(profile.telegramId || '')}`
+            `${API_URL}?userId=${encodeURIComponent(profile.telegramId)}`
         );
         const listings = listingsResp.ok ? await listingsResp.json() : [];
+        console.log('Listings loaded:', listings.length);
 
         renderUserProfileModal(profile, listings);
     } catch (error) {
         console.error('Ошибка открытия профиля по ID:', error);
-        showError('Профиль по ссылке не найден.');
+        showError(`Профиль по ссылке не найден: ${error.message}`);
     }
 }
 
