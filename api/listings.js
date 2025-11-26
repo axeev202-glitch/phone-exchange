@@ -126,7 +126,8 @@ export default async function handler(req, res) {
                 location: body.location || 'Москва',
                 timestamp: new Date().toISOString(),
                 userId: body.userId || 'anonymous',
-                userInfo: body.userInfo || {}
+                userInfo: body.userInfo || {},
+                image: body.image || null
             };
 
             // Добавляем в массив
