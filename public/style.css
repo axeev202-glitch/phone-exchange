@@ -4,6 +4,19 @@
     box-sizing: border-box;
 }
 
+/* Предотвращение выхода за границы на всех устройствах */
+html, body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    position: relative;
+}
+
+img, video {
+    max-width: 100%;
+    height: auto;
+}
+
 :root {
     --primary: #0a0a0a;
     --secondary: #141414;
@@ -25,6 +38,12 @@
     --gradient-glow: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(236, 72, 153, 0.3));
 }
 
+html {
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100%;
+}
+
 body {
     font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: var(--primary);
@@ -32,14 +51,16 @@ body {
     line-height: 1.6;
     overflow-x: hidden;
     width: 100%;
-    max-width: 100vw;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
     opacity: 0;
     animation: fadeIn 0.5s ease-in forwards;
 }
 
 .container {
     width: 100%;
-    max-width: 100vw;
+    max-width: 100%;
     margin: 0 auto;
     background: var(--primary);
     min-height: 100vh;
@@ -87,9 +108,6 @@ body {
     z-index: 100;
     border-bottom: 1px solid var(--card-border);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
 }
 
 .header h1 {
@@ -121,9 +139,6 @@ body {
     gap: 6px;
     border-bottom: 1px solid var(--card-border);
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
 }
 
 .nav-btn {
@@ -140,9 +155,6 @@ body {
     border-radius: 14px;
     border: 1px solid transparent;
     overflow: hidden;
-    min-width: 0;
-    max-width: 100%;
-    box-sizing: border-box;
 }
 
 .nav-btn::before {
@@ -207,14 +219,10 @@ body {
 .search-bar {
     padding: 15px;
     background: transparent;
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
 }
 
 .search-input {
     width: 100%;
-    max-width: 100%;
     padding: 16px 20px;
     border: 1px solid var(--card-border);
     border-radius: 16px;
@@ -225,7 +233,6 @@ body {
     transition: all 0.3s ease;
     backdrop-filter: blur(10px);
     font-weight: 500;
-    box-sizing: border-box;
 }
 
 .search-input:focus {
@@ -246,9 +253,6 @@ body {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
 }
 
 .listing-card {
@@ -949,13 +953,11 @@ body {
     border-radius: 24px;
     width: 92%;
     max-width: 440px;
-    max-width: min(92vw, 440px);
     max-height: 82vh;
     overflow-y: auto;
     position: relative;
     animation: slideUp 0.4s ease;
     border: 1px solid var(--card-border);
-    box-sizing: border-box;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
 }
 
@@ -1279,33 +1281,6 @@ body {
 
 /* Адаптивность */
 
-/* Базовые стили для всех экранов */
-* {
-    max-width: 100%;
-}
-
-html {
-    overflow-x: hidden;
-    width: 100%;
-    max-width: 100vw;
-}
-
-body {
-    overflow-x: hidden;
-    width: 100%;
-    max-width: 100vw;
-}
-
-img, video, iframe {
-    max-width: 100%;
-    height: auto;
-}
-
-input, textarea, select, button {
-    max-width: 100%;
-    box-sizing: border-box;
-}
-
 /* Очень маленькие экраны (до 360px) */
 @media (max-width: 360px) {
     .container {
@@ -1382,153 +1357,87 @@ input, textarea, select, button {
 /* Маленькие экраны (361px - 480px) */
 @media (min-width: 361px) and (max-width: 480px) {
     .container {
+        max-width: 100%;
         margin: 0;
-        max-width: 100vw;
-        width: 100%;
+        padding: 0;
     }
     
     .header {
         padding: 18px 12px 12px;
-        max-width: 100%;
     }
     
     .listings-container {
         grid-template-columns: repeat(2, 1fr);
         gap: 10px;
         padding: 10px;
-        max-width: 100%;
-        box-sizing: border-box;
     }
     
     .listing-card {
         border-radius: 16px;
-        max-width: 100%;
-        overflow: hidden;
     }
     
     .listing-image {
         height: 160px;
         border-radius: 16px 16px 0 0;
-        max-width: 100%;
     }
     
     .listing-details {
         padding: 12px;
-        max-width: 100%;
-        box-sizing: border-box;
     }
     
     .listing-title {
         font-size: 1em;
-        word-wrap: break-word;
-        overflow-wrap: break-word;
     }
     
     .nav {
         padding: 8px 10px;
         gap: 4px;
-        max-width: 100%;
-        box-sizing: border-box;
     }
     
     .nav-btn {
         padding: 12px 6px;
         font-size: 0.75em;
-        flex: 1;
-        min-width: 0;
-    }
-    
-    .search-bar {
-        max-width: 100%;
-        box-sizing: border-box;
-        padding: 10px;
     }
     
     .modal-content {
-        width: 95vw;
-        max-width: 95vw;
-        box-sizing: border-box;
+        width: 95%;
+        max-width: 100%;
+        padding: 16px;
     }
 }
 
-/* Средние экраны (481px - 600px) - большие телефоны */
+/* Средние экраны (481px - 600px) - для больших мобильных 6.8" */
 @media (min-width: 481px) and (max-width: 600px) {
-    .container {
-        max-width: 100vw;
+    html, body {
         width: 100%;
-        margin: 0;
+        max-width: 100%;
+        overflow-x: hidden;
     }
     
-    .header {
-        padding: 20px 16px 16px;
+    .container {
         max-width: 100%;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
     }
     
     .listings-container {
         grid-template-columns: repeat(2, 1fr);
         gap: 12px;
         padding: 12px;
-        max-width: 100%;
+        width: 100%;
         box-sizing: border-box;
     }
     
     .listing-image {
         height: 180px;
-        max-width: 100%;
-    }
-    
-    .listing-details {
-        padding: 14px;
-        max-width: 100%;
-        box-sizing: border-box;
     }
     
     .nav {
-        padding: 10px 12px;
-        gap: 6px;
-        max-width: 100%;
-        box-sizing: border-box;
-    }
-    
-    .nav-btn {
-        padding: 14px 8px;
-        font-size: 0.8em;
-        flex: 1;
-        min-width: 0;
-    }
-    
-    .search-bar {
-        max-width: 100%;
-        box-sizing: border-box;
-        padding: 12px;
-    }
-    
-    .modal-content {
-        width: 92vw;
-        max-width: 92vw;
-        box-sizing: border-box;
-    }
-}
-
-/* Средние экраны (601px - 768px) */
-@media (min-width: 601px) and (max-width: 768px) {
-    .container {
-        max-width: 100vw;
         width: 100%;
-        margin: 0;
-    }
-    
-    .listings-container {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 14px;
-        padding: 14px;
-        max-width: 100%;
         box-sizing: border-box;
-    }
-    
-    .listing-image {
-        height: 170px;
-        max-width: 100%;
+        padding: 8px 12px;
     }
     
     .nav-btn {
@@ -1539,9 +1448,55 @@ input, textarea, select, button {
     }
     
     .modal-content {
-        width: 90vw;
-        max-width: 600px;
+        width: 95%;
+        max-width: 100%;
+        padding: 20px;
         box-sizing: border-box;
+    }
+    
+    .header {
+        padding: 20px 16px 16px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    
+    .search-bar {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 12px;
+    }
+    
+    .search-input {
+        width: 100%;
+        box-sizing: border-box;
+    }
+}
+
+/* Средние экраны (601px - 768px) */
+@media (min-width: 601px) and (max-width: 768px) {
+    .container {
+        max-width: 100%;
+        margin: 0 auto;
+    }
+    
+    .listings-container {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+        padding: 14px;
+    }
+    
+    .listing-image {
+        height: 170px;
+    }
+    
+    .nav-btn {
+        padding: 14px 10px;
+        font-size: 0.85em;
+    }
+    
+    .modal-content {
+        width: 90%;
+        max-width: 500px;
     }
 }
 
@@ -1573,11 +1528,46 @@ input, textarea, select, button {
     }
 }
 
+/* Большие мобильные экраны (481px - 600px) - для телефонов 6.8" */
+@media (min-width: 481px) and (max-width: 600px) {
+    .container {
+        max-width: 100%;
+        margin: 0;
+        padding: 0;
+    }
+    
+    .listings-container {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        padding: 12px;
+    }
+    
+    .listing-image {
+        height: 170px;
+    }
+    
+    .nav-btn {
+        padding: 14px 10px;
+        font-size: 0.85em;
+    }
+    
+    .modal-content {
+        width: 95%;
+        max-width: 100%;
+        padding: 20px;
+    }
+    
+    .header {
+        padding: 20px 16px 16px;
+    }
+}
+
 /* Большие экраны (1025px+) */
 @media (min-width: 1025px) {
     .container {
         max-width: 1200px;
         margin: 0 auto;
+        padding: 0 20px;
     }
     
     .listings-container {

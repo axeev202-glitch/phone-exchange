@@ -108,7 +108,12 @@ async function initApp() {
 }
 
 async function initUserProfile() {
-    if (!currentUser) return;
+    if (!currentUser) {
+        console.warn('Cannot init profile: currentUser is not set');
+        return;
+    }
+
+    console.log('Initializing user profile for:', currentUser.id);
 
     const payload = {
         action: 'init',
@@ -118,19 +123,37 @@ async function initUserProfile() {
         avatar: currentUser.photoUrl || null
     };
 
-    const response = await fetch(USERS_API_URL, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-    });
+    try {
+        const response = await fetch(USERS_API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
 
-    if (!response.ok) {
-        throw new Error(`Users API error: ${response.status}`);
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Profile init error:', response.status, errorText);
+            throw new Error(`Users API error: ${response.status}`);
+        }
+
+        currentProfile = await response.json();
+        console.log('Profile initialized successfully:', {
+            telegramId: currentProfile.telegramId,
+            publicId: currentProfile.publicId,
+            name: currentProfile.name
+        });
+        
+        // Показываем уведомление о регистрации (только при первом входе)
+        if (currentProfile.createdAt && 
+            new Date(currentProfile.createdAt).getTime() > Date.now() - 5000) {
+            console.log('New user registered with ID:', currentProfile.publicId);
+        }
+    } catch (error) {
+        console.error('Failed to initialize profile:', error);
+        throw error;
     }
-
-    currentProfile = await response.json();
 }
 
 function updateProfile() {
