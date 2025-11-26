@@ -164,7 +164,15 @@ export default async function handler(req, res) {
                 image: body.image || (Array.isArray(body.images) && body.images.length > 0 ? body.images[0] : null),
                 images: Array.isArray(body.images) ? body.images : (body.image ? [body.image] : []),
                 isHidden: false,
-                isDeleted: false
+                isDeleted: false,
+                // Данные фильтров
+                priceSegment: body.priceSegment || null,
+                color: body.color || null,
+                firmware: body.firmware || null,
+                usage: body.usage || null,
+                storage: body.storage || null,
+                ram: body.ram || null,
+                year: body.year || null
             };
 
             // Добавляем в массив
