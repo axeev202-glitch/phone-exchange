@@ -1218,18 +1218,11 @@ function shareMyProfile() {
         return;
     }
 
-    let link;
-    if (BOT_USERNAME && BOT_USERNAME !== 'YOUR_BOT_USERNAME_HERE') {
-        // Ссылка откроет мини‑апп этого бота с пейлоудом профиля
-        link = `https://t.me/${BOT_USERNAME}?startapp=profile_${encodeURIComponent(
-            currentProfile.publicId
-        )}`;
-    } else {
-        // Фоллбек — ссылка на веб‑версию
-        link = `${window.location.origin}?profile=${encodeURIComponent(
-            currentProfile.publicId
-        )}`;
-    }
+    // Ссылка на основной Mini App бота через /app,
+    // чтобы открывался не просто чат, а сразу мини‑приложение
+    let link = `https://t.me/${BOT_USERNAME}/app?startapp=profile_${encodeURIComponent(
+        currentProfile.publicId
+    )}`;
 
     const text = `Мой профиль на PhoneExchange: ${link}`;
 
