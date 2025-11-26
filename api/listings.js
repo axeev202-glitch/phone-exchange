@@ -176,18 +176,5 @@ if (typeof window === 'undefined') {
     });
 }
 
-// Демо данные для разработки
-if (process.env.NODE_ENV !== 'production' && listings.length === 0) {
-    listings = [
-        {
-            id: '1',
-            phoneModel: 'iPhone 14 Pro',
-            condition: 'excellent',
-            description: 'Отличное состояние, батарея 95%',
-            desiredPhone: 'Samsung S23',
-            location: 'Москва',
-            timestamp: new Date().toISOString(),
-            userId: 'demo_user'
-        }
-    ];
-}
+// Раньше тут инициализировались демо‑объявления.
+// Теперь храним только реальные объявления, созданные пользователями.
