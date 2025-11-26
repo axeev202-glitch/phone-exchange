@@ -200,10 +200,15 @@
     <div id="user-profile-modal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
-            <div class="modal-header">
-                <h3 id="user-profile-name">Профиль пользователя</h3>
-                <p id="user-profile-username" class="user-profile-username"></p>
-                <div id="user-profile-rating" class="rating-large">⭐ 0.0</div>
+            <div class="modal-header user-profile-header">
+                <div class="user-profile-header-main">
+                    <div class="avatar user-profile-avatar" id="user-profile-avatar">👤</div>
+                    <div class="user-profile-header-text">
+                        <h3 id="user-profile-name">Профиль пользователя</h3>
+                        <p id="user-profile-username" class="user-profile-username"></p>
+                        <div id="user-profile-rating" class="rating-large">⭐ 0.0</div>
+                    </div>
+                </div>
                 <div class="profile-id-row">
                     <span class="profile-id-label">ID профиля:</span>
                     <span class="profile-id-value" id="user-profile-public-id">—</span>
@@ -234,10 +239,44 @@
             </div>
             <div class="modal-body">
                 <div class="form-group">
+                    <label for="profile-avatar-input">Аватар</label>
+                    <div class="avatar-upload">
+                        <div class="avatar avatar-upload-preview" id="profile-avatar-preview">👤</div>
+                        <input type="file" id="profile-avatar-input" accept="image/*">
+                    </div>
+                </div>
+                <div class="form-group">
                     <label for="profile-about-input">О себе</label>
                     <textarea id="profile-about-input" rows="4" placeholder="Расскажите о себе, опыте обменов, предпочтениях..."></textarea>
                 </div>
                 <button class="btn btn-primary" onclick="saveProfile()">💾 Сохранить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно отзыва после сделки -->
+    <div id="review-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div class="modal-header">
+                <h3>⭐ Оставить отзыв</h3>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="review-rating">Оценка сделки</label>
+                    <select id="review-rating">
+                        <option value="5">5 — всё супер</option>
+                        <option value="4">4 — хорошо</option>
+                        <option value="3">3 — нормально</option>
+                        <option value="2">2 — плохо</option>
+                        <option value="1">1 — ужасно</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="review-text">Комментарий</label>
+                    <textarea id="review-text" rows="3" placeholder="Поделитесь своим опытом сделки..."></textarea>
+                </div>
+                <button class="btn btn-primary" onclick="submitReview()">💾 Отправить отзыв</button>
             </div>
         </div>
     </div>

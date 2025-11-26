@@ -11,6 +11,8 @@ const apiBase = apiBaseOverride && apiBaseOverride.length > 0
   : (isLocalhost ? 'http://localhost:3000' : window.location.origin);
 const API_URL = `${apiBase.replace(/\/$/, '')}/api/listings`;
 const USERS_API_URL = `${apiBase.replace(/\/$/, '')}/api/users`;
+// Укажи здесь username своего бота, чтобы ссылка «Поделиться профилем» открывала мини‑апп внутри Telegram
+const BOT_USERNAME = 'YOUR_BOT_USERNAME_HERE';
 
 console.log('API URL:', API_URL);
 
@@ -22,6 +24,8 @@ let lastCreatedListingId = null;
 let selectedPhotoFiles = [];
 let currentListingImages = [];
 let currentListingImageIndex = 0;
+let currentExchangeTargetId = null;
+let currentAvatarData = null;
 
 // Инициализация
 document.addEventListener('DOMContentLoaded', function() {
@@ -47,7 +51,8 @@ function initApp() {
             firstName: tgUser.first_name,
             lastName: tgUser.last_name || '',
             username: tgUser.username,
-            name: `${tgUser.first_name} ${tgUser.last_name || ''}`.trim()
+            name: `${tgUser.first_name} ${tgUser.last_name || ''}`.trim(),
+            photoUrl: tgUser.photo_url || null
         };
         console.log('Telegram user:', currentUser);
     } else {
@@ -90,7 +95,8 @@ async function initUserProfile() {
         action: 'init',
         telegramId: currentUser.id,
         username: currentUser.username,
-        name: currentUser.name
+        name: currentUser.name,
+        avatar: currentUser.photoUrl || null
     };
 
     const response = await fetch(USERS_API_URL, {
@@ -116,6 +122,7 @@ function updateProfile() {
     const userAboutElement = document.getElementById('user-about');
     const userPublicIdElement = document.getElementById('user-public-id');
     const ratingLargeElement = document.querySelector('.rating-large');
+    const avatarElement = document.querySelector('.profile-card .avatar');
 
     if (userNameElement) {
         userNameElement.textContent = currentUser.name;
@@ -136,6 +143,15 @@ function updateProfile() {
         const ratingValue =
             typeof currentProfile?.rating === 'number' ? currentProfile.rating : 0;
         ratingLargeElement.textContent = `⭐ ${ratingValue.toFixed(1)}`;
+    }
+    if (avatarElement) {
+        const avatarSrc = currentProfile?.avatar || currentUser.photoUrl || null;
+        if (avatarSrc) {
+            avatarElement.style.backgroundImage = `url('${avatarSrc}')`;
+            avatarElement.style.backgroundSize = 'cover';
+            avatarElement.style.backgroundPosition = 'center';
+            avatarElement.textContent = '';
+        }
     }
 }
 
@@ -234,6 +250,25 @@ function setupButtons() {
             this.closest('.modal').style.display = 'none';
         });
     });
+
+    // Загрузка аватара в профиле
+    const avatarInput = document.getElementById('profile-avatar-input');
+    const avatarPreview = document.getElementById('profile-avatar-preview');
+    if (avatarInput && avatarPreview) {
+        avatarInput.addEventListener('change', async event => {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                currentAvatarData = reader.result;
+                avatarPreview.style.backgroundImage = `url('${currentAvatarData}')`;
+                avatarPreview.style.backgroundSize = 'cover';
+                avatarPreview.style.backgroundPosition = 'center';
+                avatarPreview.textContent = '';
+            };
+            reader.readAsDataURL(file);
+        });
+    }
 }
 
 // Загрузка объявлений
@@ -693,6 +728,7 @@ async function saveProfile() {
 
     const textarea = document.getElementById('profile-about-input');
     const modal = document.getElementById('edit-profile-modal');
+    const avatarPreview = document.getElementById('profile-avatar-preview');
     if (!textarea || !modal) return;
 
     const about = textarea.value.trim();
@@ -706,7 +742,8 @@ async function saveProfile() {
             body: JSON.stringify({
                 action: 'update_about',
                 telegramId: currentUser.id,
-                about
+                about,
+                avatar: currentAvatarData || currentProfile?.avatar || null
             })
         });
 
@@ -824,6 +861,9 @@ function showMyReviews() {
 function showListingModal(listingId) {
     const listing = allListings.find(item => item.id === listingId);
     if (!listing) return;
+
+    // Сохраняем пользователя для возможного отзыва после сделки
+    currentExchangeTargetId = listing.userId || null;
     
     const modalContent = document.getElementById('modal-listing-content');
     if (!modalContent) return;
@@ -930,6 +970,61 @@ function contactSeller() {
 function confirmExchange() {
     showSuccess('Обмен успешно начат! Ожидайте подтверждения.');
     document.getElementById('exchange-modal').style.display = 'none';
+
+    // После подтверждения обмена даём возможность оставить отзыв
+    if (currentExchangeTargetId && currentUser && currentExchangeTargetId !== currentUser.id) {
+        const reviewModal = document.getElementById('review-modal');
+        if (reviewModal) {
+            reviewModal.style.display = 'block';
+        }
+    }
+}
+
+async function submitReview() {
+    if (!currentExchangeTargetId || !currentUser) {
+        showError('Не удалось определить пользователя для отзыва.');
+        return;
+    }
+
+    const ratingSelect = document.getElementById('review-rating');
+    const textArea = document.getElementById('review-text');
+    if (!ratingSelect || !textArea) return;
+
+    const rating = parseInt(ratingSelect.value, 10) || 5;
+    const text = textArea.value.trim();
+
+    try {
+        const response = await fetch(USERS_API_URL, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                action: 'add_review',
+                targetTelegramId: currentExchangeTargetId,
+                authorTelegramId: currentUser.id,
+                authorUsername: currentUser.username,
+                rating,
+                text
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Users API error: ${response.status}`);
+        }
+
+        // Обновляем модалку профиля, если она открыта, можно будет перечитать профиль по желанию
+        showSuccess('Отзыв отправлен!');
+        const reviewModal = document.getElementById('review-modal');
+        if (reviewModal) {
+            reviewModal.style.display = 'none';
+        }
+        textArea.value = '';
+        ratingSelect.value = '5';
+    } catch (error) {
+        console.error('Ошибка отправки отзыва:', error);
+        showError('Не удалось отправить отзыв. Попробуйте позже.');
+    }
 }
 
 async function openUserProfileByTelegram(telegramId) {
@@ -984,6 +1079,7 @@ function renderUserProfileModal(profile, listings) {
     const usernameEl = document.getElementById('user-profile-username');
     const ratingEl = document.getElementById('user-profile-rating');
     const publicIdEl = document.getElementById('user-profile-public-id');
+    const avatarEl = document.getElementById('user-profile-avatar');
     const aboutEl = document.getElementById('user-profile-about');
     const listingsEl = document.getElementById('user-profile-listings');
     const reviewsEl = document.getElementById('user-profile-reviews');
@@ -999,6 +1095,17 @@ function renderUserProfileModal(profile, listings) {
     }
 
     if (publicIdEl) publicIdEl.textContent = profile.publicId || '—';
+    if (avatarEl) {
+        if (profile.avatar) {
+            avatarEl.style.backgroundImage = `url('${profile.avatar}')`;
+            avatarEl.style.backgroundSize = 'cover';
+            avatarEl.style.backgroundPosition = 'center';
+            avatarEl.textContent = '';
+        } else {
+            avatarEl.style.backgroundImage = '';
+            avatarEl.textContent = '👤';
+        }
+    }
 
     if (aboutEl) {
         const about = profile.about?.trim();
@@ -1085,9 +1192,19 @@ function shareMyProfile() {
         return;
     }
 
-    const link = `${window.location.origin}?profile=${encodeURIComponent(
-        currentProfile.publicId
-    )}`;
+    let link;
+    if (BOT_USERNAME && BOT_USERNAME !== 'YOUR_BOT_USERNAME_HERE') {
+        // Ссылка откроет мини‑апп этого бота с пейлоудом профиля
+        link = `https://t.me/${BOT_USERNAME}?startapp=profile_${encodeURIComponent(
+            currentProfile.publicId
+        )}`;
+    } else {
+        // Фоллбек — ссылка на веб‑версию
+        link = `${window.location.origin}?profile=${encodeURIComponent(
+            currentProfile.publicId
+        )}`;
+    }
+
     const text = `Мой профиль на PhoneExchange: ${link}`;
 
     try {
