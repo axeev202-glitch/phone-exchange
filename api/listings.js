@@ -106,6 +106,17 @@ export default async function handler(req, res) {
         if (req.method === 'POST') {
             console.log('POST request received');
             
+            // Проверяем размер тела запроса (примерно)
+            const contentLength = req.headers['content-length'];
+            if (contentLength && parseInt(contentLength) > 10 * 1024 * 1024) { // Больше 10MB
+                console.warn('Request body too large:', contentLength);
+                return res.status(413).json({ 
+                    success: false,
+                    error: 'Размер данных слишком большой. Пожалуйста, уменьшите размер фотографий или используйте меньше изображений.',
+                    message: 'Request entity too large'
+                });
+            }
+            
             let body;
             try {
                 if (typeof req.body === 'string') {
@@ -113,11 +124,17 @@ export default async function handler(req, res) {
                 } else {
                     body = req.body;
                 }
-                console.log('Parsed body:', body);
+                console.log('Parsed body:', {
+                    phoneModel: body.phoneModel,
+                    condition: body.condition,
+                    hasImage: !!body.image,
+                    imagesCount: Array.isArray(body.images) ? body.images.length : 0
+                });
             } catch (parseError) {
                 console.error('Error parsing JSON:', parseError);
                 return res.status(400).json({ 
-                    error: 'Invalid JSON format',
+                    success: false,
+                    error: 'Неверный формат данных',
                     details: parseError.message 
                 });
             }
