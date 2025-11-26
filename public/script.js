@@ -155,12 +155,7 @@ function updateProfile() {
     }
     if (avatarElement) {
         const avatarSrc = currentProfile?.avatar || currentUser.photoUrl || null;
-        if (avatarSrc) {
-            avatarElement.style.backgroundImage = `url('${avatarSrc}')`;
-            avatarElement.style.backgroundSize = 'cover';
-            avatarElement.style.backgroundPosition = 'center';
-            avatarElement.textContent = '';
-        }
+        setAvatar(avatarElement, avatarSrc);
     }
 }
 
@@ -172,6 +167,80 @@ function readFileAsDataUrl(file) {
         reader.onerror = reject;
         reader.readAsDataURL(file);
     });
+}
+
+// Проверка, является ли URL/данные видео
+function isVideoUrl(url) {
+    if (!url) return false;
+    
+    // Проверка по MIME type (для data URLs) - приоритет
+    if (url.startsWith('data:')) {
+        const mimeType = url.split(';')[0];
+        if (mimeType.includes('video/') || mimeType.includes('image/gif')) {
+            return true;
+        }
+    }
+    
+    // Проверка по расширению в URL
+    const videoExtensions = ['.mp4', '.webm', '.mov', '.avi', '.gif'];
+    const lowerUrl = url.toLowerCase();
+    if (videoExtensions.some(ext => lowerUrl.includes(ext))) {
+        return true;
+    }
+    
+    return false;
+}
+
+// Установка аватара с поддержкой видео
+function setAvatar(element, avatarSrc) {
+    if (!element) return;
+    
+    // Очищаем предыдущий контент
+    element.innerHTML = '';
+    element.style.backgroundImage = '';
+    element.style.backgroundSize = '';
+    element.style.backgroundPosition = '';
+    
+    if (!avatarSrc) {
+        element.textContent = '👤';
+        return;
+    }
+    
+    // Проверяем, является ли это видео
+    if (isVideoUrl(avatarSrc)) {
+        // Создаём video элемент
+        const video = document.createElement('video');
+        video.src = avatarSrc;
+        video.autoplay = true;
+        video.loop = true;
+        video.muted = true;
+        video.playsInline = true;
+        video.setAttribute('playsinline', 'true');
+        video.setAttribute('webkit-playsinline', 'true');
+        video.style.width = '100%';
+        video.style.height = '100%';
+        video.style.objectFit = 'cover';
+        video.style.borderRadius = 'inherit';
+        video.style.position = 'absolute';
+        video.style.top = '0';
+        video.style.left = '0';
+        
+        // Обработка ошибок загрузки видео
+        video.onerror = () => {
+            // Если видео не загрузилось, показываем как картинку
+            element.style.backgroundImage = `url('${avatarSrc}')`;
+            element.style.backgroundSize = 'cover';
+            element.style.backgroundPosition = 'center';
+            video.remove();
+        };
+        
+        element.appendChild(video);
+    } else {
+        // Обычная картинка
+        element.style.backgroundImage = `url('${avatarSrc}')`;
+        element.style.backgroundSize = 'cover';
+        element.style.backgroundPosition = 'center';
+    }
 }
 
 // Настройка превью фото
@@ -270,13 +339,26 @@ function setupButtons() {
             const reader = new FileReader();
             reader.onload = () => {
                 currentAvatarData = reader.result;
-                avatarPreview.style.backgroundImage = `url('${currentAvatarData}')`;
-                avatarPreview.style.backgroundSize = 'cover';
-                avatarPreview.style.backgroundPosition = 'center';
-                avatarPreview.textContent = '';
+                setAvatar(avatarPreview, currentAvatarData);
             };
             reader.readAsDataURL(file);
         });
+    }
+}
+
+// Загрузка профиля пользователя по telegramId
+async function loadUserProfile(telegramId) {
+    if (!telegramId) return null;
+    
+    try {
+        const response = await fetch(`${USERS_API_URL}?telegramId=${encodeURIComponent(telegramId)}`);
+        if (!response.ok) {
+            return null;
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Ошибка загрузки профиля:', error);
+        return null;
     }
 }
 
@@ -302,6 +384,27 @@ async function loadListings() {
         console.log('Loaded listings:', data);
         
         allListings = Array.isArray(data) ? data : [];
+        
+        // Загружаем профили всех продавцов для получения актуальных рейтингов
+        const uniqueUserIds = [...new Set(allListings.map(l => l.userId).filter(Boolean))];
+        const userRatingsMap = {};
+        
+        // Загружаем профили параллельно
+        const profilePromises = uniqueUserIds.map(async (userId) => {
+            const profile = await loadUserProfile(userId);
+            if (profile) {
+                userRatingsMap[userId] = typeof profile.rating === 'number' ? profile.rating : 0;
+            }
+        });
+        
+        await Promise.all(profilePromises);
+        
+        // Обновляем рейтинги в объявлениях
+        allListings = allListings.map(listing => ({
+            ...listing,
+            rating: userRatingsMap[listing.userId] || 0
+        }));
+        
         showListings();
         updateProfileStats();
         
@@ -666,9 +769,18 @@ function showTab(tabName) {
 function editProfile() {
     const modal = document.getElementById('edit-profile-modal');
     const textarea = document.getElementById('profile-about-input');
+    const avatarPreview = document.getElementById('profile-avatar-preview');
     if (!modal || !textarea) return;
 
     textarea.value = currentProfile?.about || '';
+    
+    // Устанавливаем текущий аватар в превью
+    if (avatarPreview) {
+        const currentAvatar = currentProfile?.avatar || currentUser?.photoUrl || null;
+        setAvatar(avatarPreview, currentAvatar);
+        currentAvatarData = currentAvatar; // Сохраняем для отправки
+    }
+    
     modal.style.display = 'block';
 }
 
@@ -1120,15 +1232,7 @@ function renderUserProfileModal(profile, listings) {
 
     if (publicIdEl) publicIdEl.textContent = profile.publicId || '—';
     if (avatarEl) {
-        if (profile.avatar) {
-            avatarEl.style.backgroundImage = `url('${profile.avatar}')`;
-            avatarEl.style.backgroundSize = 'cover';
-            avatarEl.style.backgroundPosition = 'center';
-            avatarEl.textContent = '';
-        } else {
-            avatarEl.style.backgroundImage = '';
-            avatarEl.textContent = '👤';
-        }
+        setAvatar(avatarEl, profile.avatar || null);
     }
 
     if (aboutEl) {
