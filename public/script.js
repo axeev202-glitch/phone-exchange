@@ -32,11 +32,20 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, initializing app...');
     initApp();
 
-    // Открытие профиля по ссылке ?profile=ID
+    // Открытие профиля по ссылке ?profile=ID (веб-версия)
     const params = new URLSearchParams(window.location.search);
     const profileFromLink = params.get('profile');
     if (profileFromLink) {
         setTimeout(() => openUserProfileByPublicId(profileFromLink), 500);
+        return;
+    }
+
+    // Открытие профиля через startapp (Telegram Mini App)
+    // Параметр startapp передаётся через tg.initDataUnsafe.start_param
+    const startParam = tg.initDataUnsafe?.start_param;
+    if (startParam && startParam.startsWith('profile_')) {
+        const publicId = startParam.replace('profile_', '');
+        setTimeout(() => openUserProfileByPublicId(publicId), 500);
     }
 });
 
@@ -1218,9 +1227,9 @@ function shareMyProfile() {
         return;
     }
 
-    // Ссылка на основной Mini App бота через /app,
-    // чтобы открывался не просто чат, а сразу мини‑приложение
-    let link = `https://t.me/${BOT_USERNAME}/app?startapp=profile_${encodeURIComponent(
+    // Ссылка на Mini App бота с параметром startapp
+    // Формат: https://t.me/bot_username?startapp=profile_XXXX
+    let link = `https://t.me/${BOT_USERNAME}?startapp=profile_${encodeURIComponent(
         currentProfile.publicId
     )}`;
 
