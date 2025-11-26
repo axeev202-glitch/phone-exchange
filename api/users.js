@@ -65,7 +65,7 @@ export default async function handler(req, res) {
                         username: username || null,
                         name: name || null,
                         about: '',
-                        rating: 5.0,
+                        rating: 0,
                         reviews: [],
                         createdAt: new Date().toISOString(),
                         lastSeenAt: new Date().toISOString(),
