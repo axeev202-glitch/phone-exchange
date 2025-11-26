@@ -15,16 +15,28 @@
     <div class="container">
         <!-- Шапка -->
         <header class="header">
-            <h1>📱 AndroTrade</h1>
+            <h1 onclick="goToHome()" style="cursor: pointer;">📱 AndroTrade</h1>
             <p>Безопасный обмен телефонами</p>
         </header>
 
         <!-- Навигация -->
         <nav class="nav">
-            <button class="nav-btn active" data-tab="feed">Лента</button>
-            <button class="nav-btn" data-tab="profile">Профиль</button>
-            <button class="nav-btn" data-tab="create">Добавить</button>
-            <button class="nav-btn" data-tab="exchanges">Обмены</button>
+            <button class="nav-btn active" data-tab="feed">
+                <span class="nav-icon">📱</span>
+                <span class="nav-label">Лента</span>
+            </button>
+            <button class="nav-btn" data-tab="profile">
+                <span class="nav-icon">👤</span>
+                <span class="nav-label">Профиль</span>
+            </button>
+            <button class="nav-btn" data-tab="create">
+                <span class="nav-icon">➕</span>
+                <span class="nav-label">Добавить</span>
+            </button>
+            <button class="nav-btn" data-tab="exchanges">
+                <span class="nav-icon">🔄</span>
+                <span class="nav-label">Обмены</span>
+            </button>
         </nav>
 
         <!-- Контент -->
@@ -33,6 +45,9 @@
             <div id="feed" class="tab-content active">
                 <div class="search-bar">
                     <input type="text" placeholder="🔍 Поиск телефонов..." class="search-input">
+                    <button class="filter-btn" onclick="openFiltersModal()" title="Фильтры">
+                        <span class="filter-icon">⚙️</span>
+                    </button>
                 </div>
                 
                 <div class="listings-container">
@@ -84,12 +99,12 @@
                     <h3>📱 Новое объявление</h3>
                     
                     <div class="form-group">
-                        <label>Модель телефона *</label>
+                        <label>Модель телефона</label>
                         <input type="text" id="phone-model" required placeholder="Например: iPhone 14 Pro">
                     </div>
 
                     <div class="form-group">
-                        <label>Состояние *</label>
+                        <label>Состояние</label>
                         <select id="phone-condition" required>
                             <option value="">Выберите состояние</option>
                             <option value="new">Новый</option>
@@ -102,6 +117,49 @@
                     <div class="form-group">
                         <label>Описание</label>
                         <textarea id="phone-description" placeholder="Опишите особенности, комплектацию..." rows="3"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Ценовой сегмент</label>
+                        <select id="phone-price-segment">
+                            <option value="">Не указано</option>
+                            <option value="budget">Бюджетный</option>
+                            <option value="mid-range">Средний</option>
+                            <option value="sub-flagship">Субфлагман</option>
+                            <option value="flagship">Флагман</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Память</label>
+                        <select id="phone-storage">
+                            <option value="">Не указано</option>
+                            <option value="64">64 ГБ</option>
+                            <option value="128">128 ГБ</option>
+                            <option value="256">256 ГБ</option>
+                            <option value="512">512 ГБ</option>
+                            <option value="1024">1 ТБ</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Оперативная память (ГБ)</label>
+                        <select id="phone-ram">
+                            <option value="">Не указано</option>
+                            <option value="1">1 ГБ</option>
+                            <option value="2">2 ГБ</option>
+                            <option value="4">4 ГБ</option>
+                            <option value="6">6 ГБ</option>
+                            <option value="8">8 ГБ</option>
+                            <option value="10">10 ГБ</option>
+                            <option value="12">12 ГБ</option>
+                            <option value="14">14 ГБ</option>
+                            <option value="16">16 ГБ</option>
+                            <option value="18">18 ГБ</option>
+                            <option value="20">20 ГБ</option>
+                            <option value="22">22 ГБ</option>
+                            <option value="24">24 ГБ</option>
+                        </select>
                     </div>
 
                     <div class="form-group">
@@ -118,12 +176,12 @@
                     </div>
 
                     <div class="form-group">
-                        <label>Желаемый обмен *</label>
+                        <label>Хочу обмен</label>
                         <input type="text" id="desired-phone" required placeholder="На что хотите поменять?">
                     </div>
 
                     <div class="form-group">
-                        <label>Город *</label>
+                        <label>Город</label>
                         <input type="text" id="phone-location" required placeholder="Например: Москва">
                     </div>
 
@@ -291,6 +349,150 @@
                     <textarea id="review-text" rows="3" placeholder="Поделитесь своим опытом сделки..."></textarea>
                 </div>
                 <button class="btn btn-primary" onclick="submitReview()">💾 Отправить отзыв</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно фильтров -->
+    <div id="filters-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div class="modal-header">
+                <h3>⚙️ Фильтры</h3>
+            </div>
+            <div class="modal-body">
+                <div class="filter-section">
+                    <h4 class="filter-section-title">💰 Ценовой сегмент</h4>
+                    <div class="filter-options">
+                        <label class="filter-option">
+                            <input type="checkbox" class="filter-checkbox" data-filter="price-segment" value="budget">
+                            <span class="filter-icon">💵</span>
+                            <span>Бюджетный</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" class="filter-checkbox" data-filter="price-segment" value="mid-range">
+                            <span class="filter-icon">💴</span>
+                            <span>Средний</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" class="filter-checkbox" data-filter="price-segment" value="sub-flagship">
+                            <span class="filter-icon">⭐</span>
+                            <span>Субфлагман</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" class="filter-checkbox" data-filter="price-segment" value="flagship">
+                            <span class="filter-icon">👑</span>
+                            <span>Флагман</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="filter-section">
+                    <h4 class="filter-section-title">💾 Память</h4>
+                    <div class="filter-options">
+                        <label class="filter-option">
+                            <input type="checkbox" class="filter-checkbox" data-filter="storage" value="64">
+                            <span class="filter-icon">💾</span>
+                            <span>64 ГБ</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" class="filter-checkbox" data-filter="storage" value="128">
+                            <span class="filter-icon">💾</span>
+                            <span>128 ГБ</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" class="filter-checkbox" data-filter="storage" value="256">
+                            <span class="filter-icon">💾</span>
+                            <span>256 ГБ</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" class="filter-checkbox" data-filter="storage" value="512">
+                            <span class="filter-icon">💾</span>
+                            <span>512 ГБ</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" class="filter-checkbox" data-filter="storage" value="1024">
+                            <span class="filter-icon">💾</span>
+                            <span>1 ТБ</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="filter-section">
+                    <h4 class="filter-section-title">🚀 Оперативная память</h4>
+                    <div class="filter-options">
+                        <label class="filter-option">
+                            <input type="checkbox" class="filter-checkbox" data-filter="ram" value="1">
+                            <span class="filter-icon">🚀</span>
+                            <span>1 ГБ</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" class="filter-checkbox" data-filter="ram" value="2">
+                            <span class="filter-icon">🚀</span>
+                            <span>2 ГБ</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" class="filter-checkbox" data-filter="ram" value="4">
+                            <span class="filter-icon">🚀</span>
+                            <span>4 ГБ</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" class="filter-checkbox" data-filter="ram" value="6">
+                            <span class="filter-icon">🚀</span>
+                            <span>6 ГБ</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" class="filter-checkbox" data-filter="ram" value="8">
+                            <span class="filter-icon">🚀</span>
+                            <span>8 ГБ</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" class="filter-checkbox" data-filter="ram" value="10">
+                            <span class="filter-icon">🚀</span>
+                            <span>10 ГБ</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" class="filter-checkbox" data-filter="ram" value="12">
+                            <span class="filter-icon">🚀</span>
+                            <span>12 ГБ</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" class="filter-checkbox" data-filter="ram" value="14">
+                            <span class="filter-icon">🚀</span>
+                            <span>14 ГБ</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" class="filter-checkbox" data-filter="ram" value="16">
+                            <span class="filter-icon">🚀</span>
+                            <span>16 ГБ</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" class="filter-checkbox" data-filter="ram" value="18">
+                            <span class="filter-icon">🚀</span>
+                            <span>18 ГБ</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" class="filter-checkbox" data-filter="ram" value="20">
+                            <span class="filter-icon">🚀</span>
+                            <span>20 ГБ</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" class="filter-checkbox" data-filter="ram" value="22">
+                            <span class="filter-icon">🚀</span>
+                            <span>22 ГБ</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" class="filter-checkbox" data-filter="ram" value="24">
+                            <span class="filter-icon">🚀</span>
+                            <span>24 ГБ</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="filter-actions">
+                    <button class="btn btn-secondary" onclick="clearFilters()">Очистить</button>
+                    <button class="btn btn-primary" onclick="applyFilters()">Применить</button>
+                </div>
             </div>
         </div>
     </div>

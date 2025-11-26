@@ -22,6 +22,11 @@ let currentProfile = null;
 let allListings = [];
 let filteredListings = [];
 let searchQuery = '';
+let activeFilters = {
+    priceSegment: [],
+    storage: [],
+    ram: []
+};
 let lastCreatedListingId = null;
 let selectedPhotoFiles = [];
 let currentListingImages = [];
@@ -380,7 +385,7 @@ function setupPhotoUpload() {
         const items = document.createElement('div');
         items.className = 'photo-preview-items';
         
-        selectedPhotoFiles.forEach(file => {
+        selectedPhotoFiles.forEach((file, index) => {
             const item = document.createElement('div');
             item.className = 'photo-preview-item';
             
@@ -393,7 +398,17 @@ function setupPhotoUpload() {
             name.className = 'photo-preview-name';
             name.textContent = file.name;
             
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'photo-preview-remove';
+            removeBtn.innerHTML = '×';
+            removeBtn.title = 'Удалить фото';
+            removeBtn.onclick = (e) => {
+                e.stopPropagation();
+                removePhoto(index);
+            };
+            
             item.appendChild(img);
+            item.appendChild(removeBtn);
             item.appendChild(name);
             items.appendChild(item);
         });
@@ -402,6 +417,61 @@ function setupPhotoUpload() {
     };
     
     photoInput.addEventListener('change', updatePreview);
+}
+
+// Удаление фотографии из превью
+function removePhoto(index) {
+    if (index >= 0 && index < selectedPhotoFiles.length) {
+        // Удаляем файл из массива
+        selectedPhotoFiles.splice(index, 1);
+        
+        // Обновляем превью
+        const previewList = document.getElementById('photo-preview-list');
+        if (!previewList) return;
+        
+        previewList.innerHTML = '';
+        if (selectedPhotoFiles.length === 0) {
+            return;
+        }
+        
+        const counter = document.createElement('div');
+        counter.className = 'photo-preview-counter';
+        counter.textContent = `Выбрано фото: ${selectedPhotoFiles.length}`;
+        previewList.appendChild(counter);
+        
+        const items = document.createElement('div');
+        items.className = 'photo-preview-items';
+        
+        selectedPhotoFiles.forEach((file, newIndex) => {
+            const item = document.createElement('div');
+            item.className = 'photo-preview-item';
+            
+            const img = document.createElement('img');
+            img.className = 'photo-preview-thumb';
+            img.src = URL.createObjectURL(file);
+            img.onload = () => URL.revokeObjectURL(img.src);
+            
+            const name = document.createElement('span');
+            name.className = 'photo-preview-name';
+            name.textContent = file.name;
+            
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'photo-preview-remove';
+            removeBtn.innerHTML = '×';
+            removeBtn.title = 'Удалить фото';
+            removeBtn.onclick = (e) => {
+                e.stopPropagation();
+                removePhoto(newIndex);
+            };
+            
+            item.appendChild(img);
+            item.appendChild(removeBtn);
+            item.appendChild(name);
+            items.appendChild(item);
+        });
+        
+        previewList.appendChild(items);
+    }
 }
 
 function setupButtons() {
@@ -589,6 +659,11 @@ async function createListing() {
     btnLoading.style.display = 'flex';
     submitBtn.disabled = true;
     
+    // Получаем данные фильтров
+    const priceSegment = document.getElementById('phone-price-segment')?.value || null;
+    const storage = document.getElementById('phone-storage')?.value ? parseInt(document.getElementById('phone-storage').value) : null;
+    const ram = document.getElementById('phone-ram')?.value ? parseInt(document.getElementById('phone-ram').value) : null;
+    
     const listingData = {
         phoneModel: phoneModel,
         condition: condition,
@@ -604,7 +679,11 @@ async function createListing() {
             photoUrl: currentUser.photoUrl
         } : {},
         image: imagesData[0] || null,
-        images: imagesData
+        images: imagesData,
+        // Данные фильтров
+        priceSegment: priceSegment,
+        storage: storage,
+        ram: ram
     };
     
     console.log('Sending data to API:', listingData);
@@ -812,27 +891,48 @@ function highlightNewListing() {
     }
 }
 
-// Фильтрация объявлений по поисковому запросу
+// Фильтрация объявлений по поисковому запросу и фильтрам
 function filterListings() {
-    if (!searchQuery) {
-        filteredListings = [...allListings];
-        return;
+    let filtered = [...allListings];
+    
+    // Поиск по тексту
+    if (searchQuery) {
+        const searchLower = searchQuery.toLowerCase();
+        filtered = filtered.filter(item => {
+            const phoneModel = (item.phoneModel || '').toLowerCase();
+            const desiredPhone = (item.desiredPhone || '').toLowerCase();
+            const description = (item.description || '').toLowerCase();
+            const location = (item.location || '').toLowerCase();
+            
+            return (
+                phoneModel.includes(searchLower) ||
+                desiredPhone.includes(searchLower) ||
+                description.includes(searchLower) ||
+                location.includes(searchLower)
+            );
+        });
     }
     
-    filteredListings = allListings.filter(item => {
-        const searchLower = searchQuery.toLowerCase();
-        const phoneModel = (item.phoneModel || '').toLowerCase();
-        const desiredPhone = (item.desiredPhone || '').toLowerCase();
-        const description = (item.description || '').toLowerCase();
-        const location = (item.location || '').toLowerCase();
-        
-        return (
-            phoneModel.includes(searchLower) ||
-            desiredPhone.includes(searchLower) ||
-            description.includes(searchLower) ||
-            location.includes(searchLower)
+    // Фильтры
+    if (activeFilters.priceSegment.length > 0) {
+        filtered = filtered.filter(item => 
+            item.priceSegment && activeFilters.priceSegment.includes(item.priceSegment)
         );
-    });
+    }
+    
+    if (activeFilters.storage.length > 0) {
+        filtered = filtered.filter(item => 
+            item.storage && activeFilters.storage.includes(String(item.storage))
+        );
+    }
+    
+    if (activeFilters.ram.length > 0) {
+        filtered = filtered.filter(item => 
+            item.ram && activeFilters.ram.includes(String(item.ram))
+        );
+    }
+    
+    filteredListings = filtered;
 }
 
 // Показ объявлений
@@ -840,11 +940,24 @@ function showListings() {
     const container = document.querySelector('.listings-container');
     if (!container) return;
     
+    const hasActiveFilters = Object.values(activeFilters).some(val => {
+        if (Array.isArray(val)) return val.length > 0;
+        return val !== null && val !== undefined;
+    });
+    
     if (filteredListings.length === 0) {
+        let message = '📱 Пока нет объявлений';
+        let subMessage = 'Создайте первое объявление!';
+        
+        if (searchQuery || hasActiveFilters) {
+            message = '🔍 Ничего не найдено';
+            subMessage = 'Попробуйте изменить поисковый запрос или фильтры';
+        }
+        
         container.innerHTML = `
             <div class="empty-state">
-                <h3>${searchQuery ? '🔍 Ничего не найдено' : '📱 Пока нет объявлений'}</h3>
-                <p>${searchQuery ? 'Попробуйте изменить поисковый запрос' : 'Создайте первое объявление!'}</p>
+                <h3>${message}</h3>
+                <p>${subMessage}</p>
             </div>
         `;
         return;
@@ -946,6 +1059,17 @@ function formatTime(timestamp) {
     if (diff < 3600000) return `${Math.floor(diff / 60000)} мин назад`;
     if (diff < 86400000) return `${Math.floor(diff / 3600000)} ч назад`;
     return date.toLocaleDateString('ru-RU');
+}
+
+// Переход на главную страницу
+function goToHome() {
+    // Закрываем все модалки
+    document.querySelectorAll('.modal').forEach(modal => {
+        modal.style.display = 'none';
+    });
+    
+    // Переключаемся на вкладку ленты
+    showTab('feed');
 }
 
 // Переключение вкладок
@@ -1194,13 +1318,9 @@ function showMyReviews() {
 
 // Открытие объявления с переходом на ленту
 function showListingFromProfile(listingId) {
-    // Переключаемся на вкладку ленты
-    showTab('feed');
-    
-    // Ждем немного, чтобы лента загрузилась, затем открываем модалку
-    setTimeout(() => {
-        showListingModal(listingId);
-    }, 300);
+    // Открываем модалку объявления поверх профиля
+    // Модалка объявления имеет z-index: 2000, поэтому будет поверх профиля
+    showListingModal(listingId);
 }
 
 function showListingModal(listingId) {
@@ -1260,7 +1380,7 @@ function showListingModal(listingId) {
                     <p class="listing-description-full">${listing.description}</p>
                 </div>
                 <div class="listing-details-card">
-                    <h4>Желаемый обмен</h4>
+                    <h4>Хочу обмен</h4>
                     <p class="desired-phone">${listing.desiredPhone}</p>
                 </div>
                 <div class="listing-details-card">
@@ -1666,6 +1786,85 @@ function openReviewForCurrentProfile() {
     if (reviewModal) {
         reviewModal.style.display = 'block';
     }
+}
+
+// Открытие модального окна фильтров
+function openFiltersModal() {
+    const modal = document.getElementById('filters-modal');
+    if (modal) {
+        modal.style.display = 'block';
+    }
+}
+
+// Применение фильтров
+function applyFilters() {
+    // Собираем выбранные фильтры
+    activeFilters = {
+        priceSegment: [],
+        storage: [],
+        ram: []
+    };
+    
+    // Собираем чекбоксы
+    document.querySelectorAll('.filter-checkbox:checked').forEach(checkbox => {
+        const filterType = checkbox.dataset.filter;
+        const value = checkbox.value;
+        
+        if (filterType === 'price-segment') {
+            activeFilters.priceSegment.push(value);
+        } else if (filterType === 'storage') {
+            activeFilters.storage.push(value);
+        } else if (filterType === 'ram') {
+            activeFilters.ram.push(value);
+        }
+    });
+    
+    // Применяем фильтры
+    filterListings();
+    showListings();
+    
+    // Закрываем модалку
+    const modal = document.getElementById('filters-modal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+    
+    // Показываем уведомление
+    const activeFiltersCount = Object.values(activeFilters).reduce((sum, val) => {
+        if (Array.isArray(val)) return sum + val.length;
+        return sum + (val ? 1 : 0);
+    }, 0);
+    
+    if (activeFiltersCount > 0) {
+        showSuccess(`Применено фильтров: ${activeFiltersCount}`);
+    }
+}
+
+// Очистка фильтров
+function clearFilters() {
+    // Сбрасываем все чекбоксы
+    document.querySelectorAll('.filter-checkbox').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    
+    // Сбрасываем активные фильтры
+    activeFilters = {
+        priceSegment: [],
+        storage: [],
+        ram: []
+    };
+    
+    // Применяем фильтры (очищенные)
+    filterListings();
+    showListings();
+    
+    // Закрываем модалку
+    const modal = document.getElementById('filters-modal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+    
+    showSuccess('Фильтры очищены');
 }
 
 function shareMyProfile() {
