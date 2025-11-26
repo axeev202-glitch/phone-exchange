@@ -106,13 +106,13 @@ export default async function handler(req, res) {
         if (req.method === 'POST') {
             console.log('POST request received');
             
-            // Проверяем размер тела запроса (примерно)
+            // Проверяем размер тела запроса (примерно) - лимит 100MB
             const contentLength = req.headers['content-length'];
-            if (contentLength && parseInt(contentLength) > 10 * 1024 * 1024) { // Больше 10MB
+            if (contentLength && parseInt(contentLength) > 100 * 1024 * 1024) { // Больше 100MB
                 console.warn('Request body too large:', contentLength);
                 return res.status(413).json({ 
                     success: false,
-                    error: 'Размер данных слишком большой. Пожалуйста, уменьшите размер фотографий или используйте меньше изображений.',
+                    error: 'Размер данных слишком большой (максимум 100MB). Пожалуйста, уменьшите размер фотографий или используйте меньше изображений.',
                     message: 'Request entity too large'
                 });
             }
