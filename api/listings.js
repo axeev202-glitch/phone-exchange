@@ -70,7 +70,7 @@ function getConditionText(condition) {
 export default async function handler(req, res) {
     // Устанавливаем CORS заголовки
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     
     // Обрабатываем preflight запрос
@@ -81,8 +81,25 @@ export default async function handler(req, res) {
     try {
         // GET запрос - получить все объявления
         if (req.method === 'GET') {
-            console.log('GET request - returning', listings.length, 'listings');
-            return res.status(200).json(listings);
+            const { userId, includeHidden } = req.query || {};
+
+            let filtered = listings.filter(l => !l.isDeleted);
+
+            if (!includeHidden) {
+                filtered = filtered.filter(l => !l.isHidden);
+            }
+
+            if (userId) {
+                filtered = listings.filter(
+                    l =>
+                        l.userId === userId &&
+                        !l.isDeleted &&
+                        (includeHidden ? true : !l.isHidden)
+                );
+            }
+
+            console.log('GET request - returning', filtered.length, 'listings');
+            return res.status(200).json(filtered);
         }
 
         // POST запрос - создать новое объявление
@@ -127,7 +144,10 @@ export default async function handler(req, res) {
                 timestamp: new Date().toISOString(),
                 userId: body.userId || 'anonymous',
                 userInfo: body.userInfo || {},
-                image: body.image || null
+                image: body.image || (Array.isArray(body.images) && body.images.length > 0 ? body.images[0] : null),
+                images: Array.isArray(body.images) ? body.images : (body.image ? [body.image] : []),
+                isHidden: false,
+                isDeleted: false
             };
 
             // Добавляем в массив
@@ -150,6 +170,60 @@ export default async function handler(req, res) {
                 telegramSent: true,
                 message: 'Объявление успешно создано и отправлено в Telegram!'
             });
+        }
+
+        // PATCH запрос - обновление объявления (например, скрыть/показать)
+        if (req.method === 'PATCH') {
+            let body = req.body;
+            if (typeof body === 'string') {
+                body = JSON.parse(body || '{}');
+            }
+
+            const { id, userId, isHidden } = body || {};
+            if (!id) {
+                return res.status(400).json({ error: 'id is required' });
+            }
+
+            const listing = listings.find(l => l.id === id);
+            if (!listing) {
+                return res.status(404).json({ error: 'Listing not found' });
+            }
+
+            if (userId && listing.userId && listing.userId !== userId) {
+                return res.status(403).json({ error: 'Forbidden' });
+            }
+
+            if (typeof isHidden === 'boolean') {
+                listing.isHidden = isHidden;
+            }
+
+            return res.status(200).json({ success: true, listing });
+        }
+
+        // DELETE запрос - пометить объявление как удалённое
+        if (req.method === 'DELETE') {
+            let body = req.body;
+            if (typeof body === 'string') {
+                body = JSON.parse(body || '{}');
+            }
+
+            const { id, userId } = body || {};
+            if (!id) {
+                return res.status(400).json({ error: 'id is required' });
+            }
+
+            const listing = listings.find(l => l.id === id);
+            if (!listing) {
+                return res.status(404).json({ error: 'Listing not found' });
+            }
+
+            if (userId && listing.userId && listing.userId !== userId) {
+                return res.status(403).json({ error: 'Forbidden' });
+            }
+
+            listing.isDeleted = true;
+
+            return res.status(200).json({ success: true });
         }
 
         return res.status(405).json({ 
