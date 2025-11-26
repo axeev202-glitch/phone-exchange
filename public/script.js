@@ -169,13 +169,36 @@ function updateProfile() {
     }
 }
 
-// Сжатие изображения
-function compressImage(file, maxWidth = 1200, maxHeight = 1200, quality = 0.8) {
+// Сжатие изображения (с увеличенными параметрами для поддержки до 100MB)
+function compressImage(file, maxWidth = 2000, maxHeight = 2000, quality = 0.9) {
     return new Promise((resolve, reject) => {
         // Если файл не изображение, возвращаем как есть
         if (!file.type.startsWith('image/')) {
             readFileAsDataUrl(file).then(resolve).catch(reject);
             return;
+        }
+
+        // Если файл маленький (меньше 5MB), сжимаем меньше или не сжимаем
+        const fileSizeMB = file.size / 1024 / 1024;
+        let actualMaxWidth = maxWidth;
+        let actualMaxHeight = maxHeight;
+        let actualQuality = quality;
+
+        if (fileSizeMB < 5) {
+            // Маленькие файлы - минимальное сжатие
+            actualMaxWidth = 3000;
+            actualMaxHeight = 3000;
+            actualQuality = 0.95;
+        } else if (fileSizeMB < 20) {
+            // Средние файлы - умеренное сжатие
+            actualMaxWidth = 2500;
+            actualMaxHeight = 2500;
+            actualQuality = 0.9;
+        } else {
+            // Большие файлы - более агрессивное сжатие, но все еще высокое качество
+            actualMaxWidth = 2000;
+            actualMaxHeight = 2000;
+            actualQuality = 0.85;
         }
 
         const reader = new FileReader();
@@ -186,8 +209,8 @@ function compressImage(file, maxWidth = 1200, maxHeight = 1200, quality = 0.8) {
                 let width = img.width;
                 let height = img.height;
 
-                if (width > maxWidth || height > maxHeight) {
-                    const ratio = Math.min(maxWidth / width, maxHeight / height);
+                if (width > actualMaxWidth || height > actualMaxHeight) {
+                    const ratio = Math.min(actualMaxWidth / width, actualMaxHeight / height);
                     width = width * ratio;
                     height = height * ratio;
                 }
@@ -202,7 +225,7 @@ function compressImage(file, maxWidth = 1200, maxHeight = 1200, quality = 0.8) {
                 ctx.drawImage(img, 0, 0, width, height);
 
                 // Конвертируем в base64 с заданным качеством
-                const compressedDataUrl = canvas.toDataURL(file.type, quality);
+                const compressedDataUrl = canvas.toDataURL(file.type, actualQuality);
                 resolve(compressedDataUrl);
             };
             img.onerror = reject;
@@ -508,8 +531,9 @@ async function createListing() {
             console.log('Compressing images...');
             imagesData = await Promise.all(
                 selectedPhotoFiles.map(file => {
-                    console.log(`Compressing ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
-                    return compressImage(file, 1200, 1200, 0.75);
+                    const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
+                    console.log(`Compressing ${file.name} (${fileSizeMB} MB)`);
+                    return compressImage(file);
                 })
             );
             
@@ -517,11 +541,17 @@ async function createListing() {
             const totalSize = imagesData.reduce((sum, dataUrl) => {
                 return sum + (dataUrl.length * 3) / 4; // Примерный размер base64
             }, 0);
-            console.log(`Total compressed size: ${(totalSize / 1024 / 1024).toFixed(2)} MB`);
+            const totalSizeMB = (totalSize / 1024 / 1024).toFixed(2);
+            console.log(`Total compressed size: ${totalSizeMB} MB`);
             
-            // Если данные все еще слишком большие, предупреждаем
-            if (totalSize > 4 * 1024 * 1024) { // Больше 4MB
-                console.warn('Compressed images are still large, may cause issues');
+            // Если данные все еще слишком большие (больше 100MB), предупреждаем
+            if (totalSize > 100 * 1024 * 1024) { // Больше 100MB
+                console.warn('Compressed images exceed 100MB limit');
+                showError(`Общий размер фотографий (${totalSizeMB} MB) превышает лимит 100MB. Пожалуйста, выберите меньше фотографий или уменьшите их размер.`);
+                btnText.style.display = 'block';
+                btnLoading.style.display = 'none';
+                submitBtn.disabled = false;
+                return;
             }
         } catch (fileError) {
             console.error('Ошибка чтения/сжатия файла(ов) фото:', fileError);
