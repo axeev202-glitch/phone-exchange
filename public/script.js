@@ -27,6 +27,13 @@ let currentListingImageIndex = 0;
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, initializing app...');
     initApp();
+
+    // Открытие профиля по ссылке ?profile=ID
+    const params = new URLSearchParams(window.location.search);
+    const profileFromLink = params.get('profile');
+    if (profileFromLink) {
+        setTimeout(() => openUserProfileByPublicId(profileFromLink), 500);
+    }
 });
 
 function initApp() {
@@ -125,8 +132,10 @@ function updateProfile() {
     if (userPublicIdElement) {
         userPublicIdElement.textContent = currentProfile?.publicId || '—';
     }
-    if (ratingLargeElement && currentProfile?.rating) {
-        ratingLargeElement.textContent = `⭐ ${currentProfile.rating.toFixed(1)}`;
+    if (ratingLargeElement) {
+        const ratingValue =
+            typeof currentProfile?.rating === 'number' ? currentProfile.rating : 0;
+        ratingLargeElement.textContent = `⭐ ${ratingValue.toFixed(1)}`;
     }
 }
 
@@ -501,7 +510,12 @@ function showListings() {
                     <div class="listing-location">📍 ${item.location}</div>
                     <div class="listing-meta">
                         <div class="user-info">
-                            <span class="rating">⭐ 5.0</span>
+                            <span class="rating">⭐ ${typeof item.rating === 'number' ? item.rating.toFixed(1) : '0.0'}</span>
+                            ${
+                                item.userId
+                                    ? `<button class="user-profile-link" onclick="event.stopPropagation(); openUserProfileByTelegram('${item.userId}')">Профиль продавца</button>`
+                                    : ''
+                            }
                         </div>
                         <div class="timestamp">${formatTime(item.timestamp)}</div>
                     </div>
@@ -916,6 +930,179 @@ function contactSeller() {
 function confirmExchange() {
     showSuccess('Обмен успешно начат! Ожидайте подтверждения.');
     document.getElementById('exchange-modal').style.display = 'none';
+}
+
+async function openUserProfileByTelegram(telegramId) {
+    try {
+        const [profileResp, listingsResp] = await Promise.all([
+            fetch(`${USERS_API_URL}?telegramId=${encodeURIComponent(telegramId)}`),
+            fetch(`${API_URL}?userId=${encodeURIComponent(telegramId)}`)
+        ]);
+
+        if (!profileResp.ok) {
+            throw new Error('Profile not found');
+        }
+
+        const profile = await profileResp.json();
+        const listings = listingsResp.ok ? await listingsResp.json() : [];
+
+        renderUserProfileModal(profile, listings);
+    } catch (error) {
+        console.error('Ошибка открытия профиля пользователя:', error);
+        showError('Не удалось открыть профиль пользователя.');
+    }
+}
+
+async function openUserProfileByPublicId(publicId) {
+    try {
+        const profileResp = await fetch(
+            `${USERS_API_URL}?publicId=${encodeURIComponent(publicId)}`
+        );
+
+        if (!profileResp.ok) {
+            throw new Error('Profile not found');
+        }
+
+        const profile = await profileResp.json();
+        const listingsResp = await fetch(
+            `${API_URL}?userId=${encodeURIComponent(profile.telegramId || '')}`
+        );
+        const listings = listingsResp.ok ? await listingsResp.json() : [];
+
+        renderUserProfileModal(profile, listings);
+    } catch (error) {
+        console.error('Ошибка открытия профиля по ID:', error);
+        showError('Профиль по ссылке не найден.');
+    }
+}
+
+function renderUserProfileModal(profile, listings) {
+    const modal = document.getElementById('user-profile-modal');
+    if (!modal) return;
+
+    const nameEl = document.getElementById('user-profile-name');
+    const usernameEl = document.getElementById('user-profile-username');
+    const ratingEl = document.getElementById('user-profile-rating');
+    const publicIdEl = document.getElementById('user-profile-public-id');
+    const aboutEl = document.getElementById('user-profile-about');
+    const listingsEl = document.getElementById('user-profile-listings');
+    const reviewsEl = document.getElementById('user-profile-reviews');
+
+    if (nameEl) nameEl.textContent = profile.name || 'Пользователь Telegram';
+    if (usernameEl)
+        usernameEl.textContent = profile.username ? `@${profile.username}` : '';
+
+    if (ratingEl) {
+        const ratingValue =
+            typeof profile.rating === 'number' ? profile.rating : 0;
+        ratingEl.textContent = `⭐ ${ratingValue.toFixed(1)}`;
+    }
+
+    if (publicIdEl) publicIdEl.textContent = profile.publicId || '—';
+
+    if (aboutEl) {
+        const about = profile.about?.trim();
+        aboutEl.textContent =
+            about && about.length > 0
+                ? about
+                : 'Пользователь пока не рассказал о себе.';
+    }
+
+    if (listingsEl) {
+        const activeListings = Array.isArray(listings)
+            ? listings.filter(l => !l.isDeleted && !l.isHidden)
+            : [];
+
+        if (activeListings.length === 0) {
+            listingsEl.innerHTML =
+                '<p class="user-profile-empty">Нет активных объявлений.</p>';
+        } else {
+            listingsEl.innerHTML = activeListings
+                .map(
+                    item => `
+                <div class="listing-card mini" onclick="showListingModal('${item.id}')">
+                    <div class="listing-content">
+                        <div class="listing-image ${getPhoneBrand(
+                            item.phoneModel
+                        )}">
+                            ${
+                                item.image
+                                    ? `<img src="${item.image}" alt="Фото ${item.phoneModel}" class="listing-photo">`
+                                    : `📱<br>${item.phoneModel}`
+                            }
+                        </div>
+                        <div class="listing-details">
+                            <div class="listing-title">${item.phoneModel}</div>
+                            <div class="listing-price">→ ${item.desiredPhone}</div>
+                            <div class="listing-location">📍 ${item.location}</div>
+                        </div>
+                    </div>
+                </div>
+            `
+                )
+                .join('');
+        }
+    }
+
+    if (reviewsEl) {
+        const reviews = Array.isArray(profile.reviews) ? profile.reviews : [];
+
+        if (reviews.length === 0) {
+            reviewsEl.innerHTML =
+                '<p class="user-profile-empty">Отзывов пока нет.</p>';
+        } else {
+            reviewsEl.innerHTML = reviews
+                .map(
+                    r => `
+                <div class="review-card">
+                    <div class="review-header">
+                        <span class="review-rating">⭐ ${r.rating}</span>
+                        <span class="review-date">${formatTime(
+                            r.createdAt
+                        )}</span>
+                    </div>
+                    <p class="review-text">${r.text || 'Без текста'}</p>
+                    <div class="review-author">
+                        ${
+                            r.authorUsername
+                                ? '@' + r.authorUsername
+                                : 'Пользователь Telegram'
+                        }
+                    </div>
+                </div>
+            `
+                )
+                .join('');
+        }
+    }
+
+    modal.style.display = 'block';
+}
+
+function shareMyProfile() {
+    if (!currentProfile?.publicId) {
+        showError('Профиль ещё не инициализирован. Попробуйте перезапустить приложение.');
+        return;
+    }
+
+    const link = `${window.location.origin}?profile=${encodeURIComponent(
+        currentProfile.publicId
+    )}`;
+    const text = `Мой профиль на PhoneExchange: ${link}`;
+
+    try {
+        if (tg && tg.openTelegramLink) {
+            const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(
+                link
+            )}&text=${encodeURIComponent(text)}`;
+            tg.openTelegramLink(shareUrl);
+        } else {
+            window.prompt('Скопируйте ссылку на ваш профиль:', link);
+        }
+    } catch (error) {
+        console.error('Ошибка при попытке поделиться профилем:', error);
+        window.prompt('Скопируйте ссылку на ваш профиль:', link);
+    }
 }
 
 // Закрытие модальных окон при клике вне контента

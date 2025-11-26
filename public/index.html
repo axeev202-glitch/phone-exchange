@@ -70,6 +70,7 @@
                     <button class="btn btn-secondary" onclick="editProfile()">✏️ Редактировать профиль</button>
                     <button class="btn btn-secondary" onclick="showMyListings()">📱 Мои объявления</button>
                     <button class="btn btn-secondary" onclick="showMyReviews()">⭐ Мои отзывы</button>
+                    <button class="btn btn-secondary" onclick="shareMyProfile()">🔗 Поделиться профилем</button>
                 </div>
 
                 <div class="profile-reviews-preview" id="profile-reviews-preview">
@@ -191,6 +192,35 @@
             </div>
             <div class="modal-body" id="my-reviews-content">
                 <!-- Отзывы будут подставлены через JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно профиля продавца -->
+    <div id="user-profile-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div class="modal-header">
+                <h3 id="user-profile-name">Профиль пользователя</h3>
+                <p id="user-profile-username" class="user-profile-username"></p>
+                <div id="user-profile-rating" class="rating-large">⭐ 0.0</div>
+                <div class="profile-id-row">
+                    <span class="profile-id-label">ID профиля:</span>
+                    <span class="profile-id-value" id="user-profile-public-id">—</span>
+                </div>
+            </div>
+            <div class="modal-body">
+                <p id="user-profile-about" class="profile-about"></p>
+
+                <div class="user-profile-section">
+                    <h4>Активные объявления</h4>
+                    <div id="user-profile-listings" class="user-profile-listings"></div>
+                </div>
+
+                <div class="user-profile-section">
+                    <h4>Отзывы</h4>
+                    <div id="user-profile-reviews" class="user-profile-reviews"></div>
+                </div>
             </div>
         </div>
     </div>
