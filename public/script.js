@@ -1,33 +1,22 @@
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-// URL API на хостинге - ЗАМЕНИ НА СВОЙ URL
-const API_BASE_URL = 'https://phone-exchange.vercel.app//api';
-const LISTINGS_API_URL = `${API_BASE_URL}/listings`;
-const EXCHANGES_API_URL = `${API_BASE_URL}/exchanges`;
+// Определяем URL API в зависимости от среды
+const isLocalhost = window.location.hostname === 'localhost' || 
+                    window.location.hostname === '127.0.0.1';
+const apiMetaTag = document.querySelector('meta[name="api-base-url"]');
+const apiBaseOverride = apiMetaTag?.content?.trim() || window.APP_CONFIG?.apiBaseUrl?.trim();
+const apiBase = apiBaseOverride && apiBaseOverride.length > 0
+  ? apiBaseOverride
+  : (isLocalhost ? 'http://localhost:3000' : window.location.origin);
+const API_URL = `${apiBase.replace(/\/$/, '')}/api/listings`;
+
+console.log('API URL:', API_URL);
 
 // Глобальные переменные
 let currentUser = null;
 let allListings = [];
-let myListings = [];
-let activeExchanges = [];
 let lastCreatedListingId = null;
-let currentTab = 'feed';
-let selectedCity = '';
-let uploadedPhotos = [];
-let currentListingId = null;
-let listingToDelete = null;
-let currentMessageListing = null;
-
-// Список городов
-const cities = [
-    'Москва', 'Санкт-Петербург', 'Новосибирск', 'Екатеринбург', 'Казань',
-    'Нижний Новгород', 'Челябинск', 'Самара', 'Омск', 'Ростов-на-Дону',
-    'Уфа', 'Красноярск', 'Воронеж', 'Пермь', 'Волгоград',
-    'Краснодар', 'Саратов', 'Тюмень', 'Тольятти', 'Ижевск',
-    'Барнаул', 'Ульяновск', 'Иркутск', 'Хабаровск', 'Ярославль',
-    'Владивосток', 'Махачкала', 'Томск', 'Оренбург', 'Кемерово'
-];
 
 // Инициализация
 document.addEventListener('DOMContentLoaded', function() {
@@ -62,20 +51,8 @@ function initApp() {
     // Обновляем профиль
     updateProfile();
     
-    // Инициализируем выбор города
-    initCitySelector();
-    
-    // Инициализируем загрузку фото
-    initPhotoUpload();
-    
-    // Инициализируем поиск
-    initSearch();
-    
     // Загружаем объявления
     loadListings();
-    
-    // Загружаем активные сделки
-    loadActiveExchanges();
     
     // Настраиваем кнопки
     setupButtons();
@@ -101,226 +78,12 @@ function updateProfile() {
     }
 }
 
-function initCitySelector() {
-    const citySearch = document.getElementById('city-search');
-    const citiesList = document.getElementById('cities-list');
-    
-    if (!citySearch || !citiesList) return;
-    
-    // Заполняем список городов
-    citiesList.innerHTML = cities.map(city => 
-        `<div class="city-item" data-city="${city}">${city}</div>`
-    ).join('');
-    
-    // Обработчик ввода в поиск
-    citySearch.addEventListener('input', function() {
-        const searchTerm = this.value.toLowerCase();
-        const filteredCities = cities.filter(city => 
-            city.toLowerCase().includes(searchTerm)
-        );
-        
-        citiesList.innerHTML = filteredCities.map(city => 
-            `<div class="city-item" data-city="${city}">${city}</div>`
-        ).join('');
-        
-        // Показываем/скрываем список
-        if (searchTerm.length > 0 && filteredCities.length > 0) {
-            citiesList.classList.add('active');
-        } else {
-            citiesList.classList.remove('active');
-        }
-    });
-    
-    // Обработчик выбора города
-    citiesList.addEventListener('click', function(e) {
-        if (e.target.classList.contains('city-item')) {
-            const city = e.target.dataset.city;
-            selectedCity = city;
-            citySearch.value = city;
-            citiesList.classList.remove('active');
-            
-            // Добавляем визуальное подтверждение выбора
-            e.target.classList.add('selected');
-            setTimeout(() => {
-                e.target.classList.remove('selected');
-            }, 1000);
-        }
-    });
-    
-    // Скрываем список при клике вне
-    document.addEventListener('click', function(e) {
-        if (!citySearch.contains(e.target) && !citiesList.contains(e.target)) {
-            citiesList.classList.remove('active');
-        }
-    });
-    
-    citiesList.style.zIndex = '1000';
-    citiesList.style.position = 'absolute';
-}
-
-// Глобальная функция для обновления превью фото
-function updatePhotoPreview() {
-    const photoPreview = document.getElementById('photo-preview');
-    const uploadArea = document.getElementById('photo-upload-area');
-    
-    if (!photoPreview) return;
-    
-    photoPreview.innerHTML = uploadedPhotos.map(photo => `
-        <div class="photo-preview-item">
-            <img src="${photo.data}" alt="Preview">
-            <button type="button" class="remove-photo" onclick="removePhoto('${photo.id}')">×</button>
-        </div>
-    `).join('');
-    
-    // Обновляем текст в области загрузки
-    const uploadPlaceholder = uploadArea?.querySelector('.upload-placeholder');
-    if (uploadPlaceholder) {
-        if (uploadedPhotos.length > 0) {
-            uploadPlaceholder.innerHTML = `
-                <span class="upload-icon">📷</span>
-                <p>Добавить еще фото</p>
-                <small>Осталось ${5 - uploadedPhotos.length} из 5</small>
-            `;
-        } else {
-            uploadPlaceholder.innerHTML = `
-                <span class="upload-icon">📷</span>
-                <p>Добавьте фото телефона</p>
-                <small>Максимум 5 фото</small>
-            `;
-        }
-    }
-}
-
-// Глобальная функция для удаления фото
-function removePhoto(photoId) {
-    uploadedPhotos = uploadedPhotos.filter(photo => photo.id !== photoId);
-    updatePhotoPreview();
-}
-
-function initPhotoUpload() {
-    const uploadArea = document.getElementById('photo-upload-area');
-    const fileInput = document.getElementById('photo-upload');
-    
-    if (!uploadArea || !fileInput) return;
-    
-    // Клик по области загрузки
-    uploadArea.addEventListener('click', function() {
-        fileInput.click();
-    });
-    
-    // Drag and drop
-    uploadArea.addEventListener('dragover', function(e) {
-        e.preventDefault();
-        uploadArea.classList.add('dragover');
-    });
-    
-    uploadArea.addEventListener('dragleave', function() {
-        uploadArea.classList.remove('dragover');
-    });
-    
-    uploadArea.addEventListener('drop', function(e) {
-        e.preventDefault();
-        uploadArea.classList.remove('dragover');
-        const files = e.dataTransfer.files;
-        handleFiles(files);
-    });
-    
-    // Выбор файлов через input
-    fileInput.addEventListener('change', function(e) {
-        handleFiles(e.target.files);
-    });
-    
-    function handleFiles(files) {
-        const validFiles = Array.from(files).filter(file => 
-            file.type.startsWith('image/') && 
-            uploadedPhotos.length + Array.from(files).length <= 5
-        );
-        
-        if (validFiles.length === 0) {
-            showError('Пожалуйста, выберите только изображения (максимум 5)');
-            return;
-        }
-        
-        validFiles.forEach(file => {
-            if (uploadedPhotos.length >= 5) {
-                showError('Максимум 5 фотографий');
-                return;
-            }
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const photoData = {
-                    id: Date.now() + Math.random(),
-                    data: e.target.result,
-                    file: file
-                };
-                uploadedPhotos.push(photoData);
-                updatePhotoPreview();
-            };
-            reader.readAsDataURL(file);
-        });
-        
-        // Сбрасываем input
-        fileInput.value = '';
-    }
-}
-
-function initSearch() {
-    const searchInput = document.getElementById('search-input');
-    if (!searchInput) return;
-    
-    let searchTimeout;
-    searchInput.addEventListener('input', function() {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            const searchTerm = this.value.toLowerCase().trim();
-            filterListings(searchTerm);
-        }, 300);
-    });
-}
-
-function filterListings(searchTerm) {
-    const container = document.getElementById('feed-listings');
-    if (!container) return;
-    
-    let filteredListings = allListings;
-    
-    if (searchTerm) {
-        filteredListings = allListings.filter(listing => 
-            listing.phoneModel?.toLowerCase().includes(searchTerm) ||
-            listing.desiredPhone?.toLowerCase().includes(searchTerm) ||
-            listing.description?.toLowerCase().includes(searchTerm) ||
-            listing.location?.toLowerCase().includes(searchTerm)
-        );
-    }
-    
-    showListings(filteredListings, container);
-    
-    // Показываем информацию о результатах поиска
-    const searchInfo = document.querySelector('.search-results-info');
-    if (searchTerm && filteredListings.length === 0) {
-        if (!searchInfo) {
-            const infoElement = document.createElement('div');
-            infoElement.className = 'search-results-info';
-            infoElement.textContent = `По запросу "${searchTerm}" ничего не найдено`;
-            container.parentNode.insertBefore(infoElement, container);
-        } else {
-            searchInfo.textContent = `По запросу "${searchTerm}" ничего не найдено`;
-        }
-    } else if (searchInfo) {
-        searchInfo.remove();
-    }
-}
-
 function setupButtons() {
-    // Навигация по вкладкам
+    // Навигация
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             const tab = this.dataset.tab;
-            console.log('Navigation button clicked:', tab);
-            if (tab !== currentTab) {
-                showTab(tab);
-            }
+            showTab(tab);
         });
     });
     
@@ -339,123 +102,40 @@ function setupButtons() {
             this.closest('.modal').style.display = 'none';
         });
     });
-    
-    // Обработчики для кнопок в модальных окнах
-    document.querySelectorAll('.modal-actions .btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const action = this.textContent.trim();
-            if (action.includes('обмен')) {
-                startExchange();
-            } else if (action.includes('Написать')) {
-                contactSeller();
-            }
-        });
-    });
-    
-    // Обработчики для кнопок в профиле
-    const profileActions = document.querySelector('.profile-actions');
-    if (profileActions) {
-        profileActions.addEventListener('click', function(e) {
-            if (e.target.closest('.btn')) {
-                const button = e.target.closest('.btn');
-                const action = button.textContent.trim();
-                
-                if (action.includes('Мои объявления')) {
-                    showMyListingsTab();
-                } else if (action.includes('Активные сделки')) {
-                    showExchangesTab();
-                } else if (action.includes('Редактировать профиль')) {
-                    editProfile();
-                }
-            }
-        });
-    }
 }
 
-// Загрузка объявлений с сервера
+// Загрузка объявлений
 async function loadListings() {
-    console.log('Loading listings from server...');
+    console.log('Loading listings from:', API_URL);
     
     try {
-        showLoading(true);
-        const response = await fetch(LISTINGS_API_URL, {
+        const response = await fetch(API_URL, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
             }
         });
+        
+        console.log('Response status:', response.status);
         
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         
         const data = await response.json();
-        console.log('Loaded listings from server:', data);
+        console.log('Loaded listings:', data);
         
         allListings = Array.isArray(data) ? data : [];
-        updateMyListings();
         showListings();
         
     } catch (error) {
         console.error('Ошибка загрузки объявлений:', error);
-        showError('Не удалось загрузить объявления с сервера');
-        allListings = [];
-        showListings();
-    } finally {
-        showLoading(false);
+        showError('Не удалось загрузить объявления с сервера. Показываем демо данные.');
+        showDemoListings();
     }
 }
 
-// Загрузка активных сделок с сервера
-async function loadActiveExchanges() {
-    try {
-        const response = await fetch(EXCHANGES_API_URL, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            activeExchanges = Array.isArray(data) ? data : [];
-        } else {
-            activeExchanges = [];
-        }
-        showActiveExchanges();
-        
-    } catch (error) {
-        console.error('Ошибка загрузки сделок:', error);
-        activeExchanges = [];
-        showActiveExchanges();
-    }
-}
-
-// Обновление моих объявлений
-function updateMyListings() {
-    if (!currentUser) return;
-    
-    myListings = allListings.filter(listing => 
-        listing.userId === currentUser.id
-    );
-    
-    // Обновляем счетчик
-    const countElement = document.getElementById('active-listings');
-    if (countElement) {
-        countElement.textContent = myListings.length;
-    }
-    
-    const completedElement = document.getElementById('completed-exchanges');
-    if (completedElement) {
-        const completedCount = activeExchanges.filter(e => e.status === 'completed').length;
-        completedElement.textContent = completedCount;
-    }
-    
-    // Показываем мои объявления если секция видима
-    showMyListings();
-}
-
-// Создание объявления на сервере
+// Создание объявления
 async function createListing() {
     console.log('Starting to create listing...');
     
@@ -463,16 +143,15 @@ async function createListing() {
     const condition = document.getElementById('phone-condition')?.value;
     const description = document.getElementById('phone-description')?.value.trim();
     const desiredPhone = document.getElementById('desired-phone')?.value.trim();
-    const city = selectedCity || document.getElementById('city-search')?.value.trim();
     const submitBtn = document.getElementById('submit-btn');
     const btnText = submitBtn.querySelector('.btn-text');
     const btnLoading = submitBtn.querySelector('.btn-loading');
     
-    console.log('Form data:', { phoneModel, condition, description, desiredPhone, city });
+    console.log('Form data:', { phoneModel, condition, description, desiredPhone });
     
     // Валидация
-    if (!phoneModel || !condition || !desiredPhone || !city) {
-        showError('Заполните все обязательные поля!');
+    if (!phoneModel || !condition || !desiredPhone) {
+        showError('Заполните обязательные поля: модель, состояние и желаемый обмен!');
         return;
     }
     
@@ -481,26 +160,19 @@ async function createListing() {
     btnLoading.style.display = 'flex';
     submitBtn.disabled = true;
     
+    const listingData = {
+        phoneModel: phoneModel,
+        condition: condition,
+        description: description || 'Нет описания',
+        desiredPhone: desiredPhone,
+        location: 'Москва',
+        userId: currentUser?.id
+    };
+    
+    console.log('Sending data to API:', listingData);
+    
     try {
-        // Создаем объект с данными объявления
-        const listingData = {
-            phoneModel: phoneModel,
-            condition: condition,
-            description: description || 'Нет описания',
-            desiredPhone: desiredPhone,
-            location: city,
-            userId: currentUser?.id,
-            userInfo: {
-                name: currentUser?.name,
-                username: currentUser?.username
-            },
-            photos: uploadedPhotos.map(photo => photo.data)
-        };
-        
-        console.log('Sending data to server:', listingData);
-        
-        // Отправляем на сервер
-        const response = await fetch(LISTINGS_API_URL, {
+        const response = await fetch(API_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -508,44 +180,24 @@ async function createListing() {
             body: JSON.stringify(listingData)
         });
         
-        console.log('Server response status:', response.status);
-        
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`HTTP error! status: ${response.status}, details: ${errorText}`);
-        }
+        console.log('API response status:', response.status);
         
         const result = await response.json();
-        console.log('Server response data:', result);
+        console.log('API response data:', result);
         
-        if (result.success) {
-            // Сохраняем ID созданного объявления
+        if (response.ok && result.success) {
+            // Сохраняем ID созданного объявления для подсветки
             lastCreatedListingId = result.listing.id;
             
-            // Показываем успех
-            showSuccess('✅ Объявление успешно создано!');
+            // Запускаем анимацию успеха и перехода
+            await animateSuccessAndTransition();
             
             // Очищаем форму
             document.getElementById('create-listing-form').reset();
-            selectedCity = '';
-            uploadedPhotos = [];
-            updatePhotoPreview();
-            
-            // Перезагружаем объявления с сервера
-            await loadListings();
-            
-            // Переходим в ленту
-            setTimeout(() => {
-                switchTab('feed');
-                
-                // Подсвечиваем новое объявление
-                setTimeout(() => {
-                    highlightNewListing();
-                }, 500);
-            }, 1000);
             
         } else {
-            throw new Error(result.error || 'Неизвестная ошибка сервера');
+            // Ошибка от API
+            throw new Error(result.error || 'Unknown API error');
         }
         
     } catch (error) {
@@ -559,281 +211,204 @@ async function createListing() {
     }
 }
 
+// Анимация успеха и перехода к ленте
+async function animateSuccessAndTransition() {
+    // Создаем анимацию успеха
+    const successAnimation = document.createElement('div');
+    successAnimation.className = 'success-animation';
+    successAnimation.innerHTML = '<div class="success-check">✅</div>';
+    document.body.appendChild(successAnimation);
+    
+    // Ждем завершения анимации успеха
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Убираем анимацию успеха
+    successAnimation.remove();
+    
+    // Запускаем анимацию перехода
+    animateToFeed();
+}
+
+// Анимация перехода к ленте
+function animateToFeed() {
+    const createTab = document.getElementById('create');
+    const feedTab = document.getElementById('feed');
+    const feedBtn = document.querySelector('[data-tab="feed"]');
+    const createBtn = document.querySelector('[data-tab="create"]');
+    
+    // Создаем элемент для анимации перехода
+    const transitionElement = document.createElement('div');
+    transitionElement.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        width: 100px;
+        height: 100px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 50%;
+        transform: translate(-50%, -50%) scale(0);
+        z-index: 10000;
+        pointer-events: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2em;
+        color: white;
+        box-shadow: 0 0 50px rgba(102, 126, 234, 0.5);
+    `;
+    transitionElement.innerHTML = '📱';
+    document.body.appendChild(transitionElement);
+    
+    // Анимация расширения круга
+    const animation = transitionElement.animate([
+        { 
+            transform: 'translate(-50%, -50%) scale(0)',
+            opacity: 1
+        },
+        { 
+            transform: 'translate(-50%, -50%) scale(1.5)',
+            opacity: 0.8
+        },
+        { 
+            transform: 'translate(-50%, -50%) scale(4)',
+            opacity: 0
+        }
+    ], {
+        duration: 800,
+        easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+    });
+    
+    // Плавное скрытие формы создания
+    createTab.classList.add('hiding');
+    
+    animation.onfinish = () => {
+        // Убираем элемент анимации
+        transitionElement.remove();
+        
+        // Переключаем вкладки
+        createTab.classList.remove('active', 'hiding');
+        feedTab.classList.add('active', 'showing');
+        
+        createBtn.classList.remove('active');
+        feedBtn.classList.add('active');
+        
+        // Загружаем обновленные объявления
+        loadListings().then(() => {
+            // После загрузки подсвечиваем новое объявление
+            setTimeout(() => {
+                highlightNewListing();
+            }, 300);
+        });
+        
+        // Убираем класс showing после анимации
+        setTimeout(() => {
+            feedTab.classList.remove('showing');
+        }, 500);
+    };
+}
+
 // Подсветка нового объявления
 function highlightNewListing() {
     if (lastCreatedListingId) {
-        setTimeout(() => {
-            const newListingElement = document.querySelector(`[data-listing-id="${lastCreatedListingId}"]`);
-            if (newListingElement) {
-                newListingElement.classList.add('new-listing');
-                newListingElement.scrollIntoView({ 
-                    behavior: 'smooth', 
-                    block: 'center' 
-                });
-                
-                // Убираем подсветку через 3 секунды
-                setTimeout(() => {
-                    newListingElement.classList.remove('new-listing');
-                }, 3000);
-            }
-        }, 100);
-    }
-}
-
-// Переключение вкладок
-function showTab(tabName) {
-    if (tabName === currentTab) return;
-    
-    const oldTab = currentTab;
-    currentTab = tabName;
-    
-    // Анимация перехода между вкладками
-    animateTabTransition(oldTab, tabName);
-}
-
-function animateTabTransition(fromTab, toTab) {
-    const fromElement = document.getElementById(fromTab);
-    const toElement = document.getElementById(toTab);
-    const fromBtn = document.querySelector(`[data-tab="${fromTab}"]`);
-    const toBtn = document.querySelector(`[data-tab="${toTab}"]`);
-    
-    if (!fromElement || !toElement) return;
-    
-    // Добавляем классы анимации
-    fromElement.classList.add('leaving');
-    toElement.classList.add('entering');
-    
-    // Убираем активность у кнопок
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    
-    // Ждем завершения анимации выхода
-    setTimeout(() => {
-        fromElement.classList.remove('active', 'leaving');
-        toElement.classList.add('active');
-        toBtn.classList.add('active');
-        
-        // Убираем класс входа после завершения анимации
-        setTimeout(() => {
-            toElement.classList.remove('entering');
-        }, 500);
-        
-        // Обновляем контент при переходе
-        if (toTab === 'feed') {
-            setTimeout(() => loadListings(), 100);
-        } else if (toTab === 'exchanges') {
-            setTimeout(() => showActiveExchanges(), 100);
+        const newListingElement = document.querySelector(`[onclick="showListingModal('${lastCreatedListingId}')"]`);
+        if (newListingElement) {
+            newListingElement.classList.add('new-listing');
+            newListingElement.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'center' 
+            });
+            
+            // Убираем подсветку через 3 секунды
+            setTimeout(() => {
+                newListingElement.classList.remove('new-listing');
+            }, 3000);
         }
-    }, 400);
-}
-
-// Простая функция переключения вкладок
-function switchTab(tabName) {
-    document.querySelectorAll('.tab-content').forEach(tab => {
-        tab.classList.remove('active');
-    });
-    
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    
-    const targetTab = document.getElementById(tabName);
-    const targetBtn = document.querySelector(`[data-tab="${tabName}"]`);
-    
-    if (targetTab) targetTab.classList.add('active');
-    if (targetBtn) targetBtn.classList.add('active');
-    
-    currentTab = tabName;
-}
-
-// Переключиться на вкладку моих объявлений
-function showMyListingsTab() {
-    showTab('profile');
-    setTimeout(() => {
-        showMyListings();
-    }, 500);
-}
-
-// Переключиться на вкладку сделок
-function showExchangesTab() {
-    showTab('exchanges');
+    }
 }
 
 // Показ объявлений
-function showListings(listings = allListings, container = document.getElementById('feed-listings')) {
+function showListings() {
+    const container = document.querySelector('.listings-container');
     if (!container) return;
     
-    if (!listings || listings.length === 0) {
+    if (allListings.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
                 <h3>📱 Пока нет объявлений</h3>
-                <p>Будьте первым - создайте объявление!</p>
-            </div>
-        `;
-        return;
-    }
-    
-    // Сортируем по дате (новые сначала)
-    const sortedListings = [...listings].sort((a, b) => 
-        new Date(b.timestamp) - new Date(a.timestamp)
-    );
-    
-    container.innerHTML = sortedListings.map((item, index) => {
-        const phoneModel = item.phoneModel || 'Неизвестная модель';
-        const description = item.description || 'Нет описания';
-        const desiredPhone = item.desiredPhone || 'Любой телефон';
-        const location = item.location || 'Не указан';
-        const userName = item.userInfo?.name || 'Аноним';
-        const timestamp = item.timestamp ? formatTime(item.timestamp) : 'недавно';
-        
-        return `
-        <div class="listing-card" data-listing-id="${item.id}" onclick="showListingModal('${item.id}')" style="animation-delay: ${index * 0.1}s">
-            <div class="listing-content">
-                <div class="listing-image ${getPhoneBrand(phoneModel)}">
-                    ${item.photos && item.photos.length > 0 ? 
-                        `<img src="${item.photos[0]}" alt="${phoneModel}" style="width:100%;height:100%;object-fit:cover;border-radius:18px;">` : 
-                        `📱<br>${phoneModel}`
-                    }
-                </div>
-                <div class="listing-details">
-                    <div class="listing-title">${phoneModel}</div>
-                    <div class="listing-description">${description}</div>
-                    <div class="listing-price">→ ${desiredPhone}</div>
-                    <div class="listing-location">📍 ${location}</div>
-                    <div class="listing-meta">
-                        <div class="user-info">
-                            <span class="rating">⭐ 5.0</span>
-                            <span class="user-name">${userName}</span>
-                        </div>
-                        <div class="timestamp">${timestamp}</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        `;
-    }).join('');
-}
-
-// Показ моих объявлений
-function showMyListings() {
-    const container = document.getElementById('my-listings-container');
-    const section = document.getElementById('my-listings-section');
-    
-    if (!container || !section) return;
-    
-    if (myListings.length === 0) {
-        container.innerHTML = `
-            <div class="empty-listings">
-                <div class="empty-icon">📱</div>
-                <h3>У вас пока нет объявлений</h3>
                 <p>Создайте первое объявление!</p>
             </div>
         `;
         return;
     }
     
-    container.innerHTML = myListings.map((item, index) => {
-        const phoneModel = item.phoneModel || 'Неизвестная модель';
-        const description = item.description || 'Нет описания';
-        const desiredPhone = item.desiredPhone || 'Любой телефон';
-        const location = item.location || 'Не указан';
-        const timestamp = item.timestamp ? formatTime(item.timestamp) : 'недавно';
-        
-        return `
-        <div class="listing-card" data-listing-id="${item.id}" style="animation-delay: ${index * 0.1}s">
+    container.innerHTML = allListings.map(item => `
+        <div class="listing-card" onclick="showListingModal('${item.id}')">
             <div class="listing-content">
-                <div class="listing-image ${getPhoneBrand(phoneModel)}">
-                    ${item.photos && item.photos.length > 0 ? 
-                        `<img src="${item.photos[0]}" alt="${phoneModel}" style="width:100%;height:100%;object-fit:cover;border-radius:18px;">` : 
-                        `📱<br>${phoneModel}`
-                    }
+                <div class="listing-image ${getPhoneBrand(item.phoneModel)}">
+                    📱<br>${item.phoneModel}
                 </div>
                 <div class="listing-details">
-                    <div class="listing-title">${phoneModel}</div>
-                    <div class="listing-description">${description}</div>
-                    <div class="listing-price">→ ${desiredPhone}</div>
-                    <div class="listing-location">📍 ${location}</div>
+                    <div class="listing-title">${item.phoneModel}</div>
+                    <div class="listing-description">${item.description}</div>
+                    <div class="listing-price">→ ${item.desiredPhone}</div>
+                    <div class="listing-location">📍 ${item.location}</div>
                     <div class="listing-meta">
-                        <div class="timestamp">${timestamp}</div>
+                        <div class="user-info">
+                            <span class="rating">⭐ 5.0</span>
+                        </div>
+                        <div class="timestamp">${formatTime(item.timestamp)}</div>
                     </div>
-                    <div class="my-listing-actions">
-                        <button type="button" class="btn btn-secondary" onclick="editListing('${item.id}')">✏️ Редактировать</button>
-                        <button type="button" class="btn btn-danger" onclick="deleteListing('${item.id}')">🗑️ Удалить</button>
-                    </div>
                 </div>
-            </div>
-        </div>
-        `;
-    }).join('');
-}
-
-// Показ активных сделок
-function showActiveExchanges() {
-    const container = document.getElementById('exchanges-list');
-    if (!container) return;
-    
-    if (activeExchanges.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <h3>🔄 Нет активных сделок</h3>
-                <p>Начните обмен с другим пользователем!</p>
-            </div>
-        `;
-        return;
-    }
-    
-    container.innerHTML = activeExchanges.map((exchange, index) => `
-        <div class="exchange-item" style="animation-delay: ${index * 0.1}s">
-            <div class="exchange-header">
-                <div class="exchange-title">Обмен #${exchange.id}</div>
-                <div class="exchange-status status-${exchange.status}">
-                    ${exchange.status === 'pending' ? 'Ожидание' : 
-                      exchange.status === 'active' ? 'Активна' : 'Завершена'}
-                </div>
-            </div>
-            <div class="exchange-parties">
-                <div class="exchange-party">
-                    <div class="exchange-phone">${exchange.myPhone}</div>
-                    <div class="exchange-user">Вы</div>
-                </div>
-                <div class="exchange-arrow">⇄</div>
-                <div class="exchange-party">
-                    <div class="exchange-phone">${exchange.theirPhone}</div>
-                    <div class="exchange-user">${exchange.theirUser}</div>
-                </div>
-            </div>
-            <div class="exchange-meta">
-                <div class="timestamp">Начато: ${formatTime(exchange.timestamp)}</div>
-            </div>
-            <div class="exchange-actions">
-                ${exchange.status === 'pending' ? `
-                    <button type="button" class="btn btn-primary" onclick="acceptExchange('${exchange.id}')">✅ Принять</button>
-                    <button type="button" class="btn btn-secondary" onclick="declineExchange('${exchange.id}')">❌ Отклонить</button>
-                ` : exchange.status === 'active' ? `
-                    <button type="button" class="btn btn-primary" onclick="completeExchange('${exchange.id}')">✅ Завершить</button>
-                    <button type="button" class="btn btn-secondary" onclick="contactUser('${exchange.theirUser}')">💌 Написать</button>
-                ` : ''}
             </div>
         </div>
     `).join('');
 }
 
-// Показать мои объявления в профиле
-function showMyListings() {
-    const section = document.getElementById('my-listings-section');
-    if (section) {
-        section.style.display = 'block';
-        updateMyListings();
-    }
-}
-
-// Скрыть мои объявления в профиле
-function hideMyListings() {
-    const section = document.getElementById('my-listings-section');
-    if (section) {
-        section.style.display = 'none';
-    }
+// Демо данные при ошибке загрузки
+function showDemoListings() {
+    const container = document.querySelector('.listings-container');
+    if (!container) return;
+    
+    container.innerHTML = `
+        <div class="listing-card" onclick="showListingModal('demo1')">
+            <div class="listing-content">
+                <div class="listing-image iphone">
+                    📱<br>iPhone 14 Pro
+                </div>
+                <div class="listing-details">
+                    <div class="listing-title">iPhone 14 Pro</div>
+                    <div class="listing-description">Отличное состояние, батарея 95%</div>
+                    <div class="listing-price">→ Samsung S23</div>
+                    <div class="listing-location">📍 Москва</div>
+                    <div class="listing-meta">
+                        <div class="user-info">
+                            <span class="rating">⭐ 5.0</span>
+                        </div>
+                        <div class="timestamp">только что</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="listing-card" onclick="showListingModal('demo2')">
+            <div class="listing-content">
+                <div class="listing-image samsung">
+                    📱<br>Samsung S23
+                </div>
+                <div class="listing-details">
+                    <div class="listing-title">Samsung Galaxy S23</div>
+                    <div class="listing-description">Новый, в коробке</div>
+                    <div class="listing-price">→ iPhone 15</div>
+                    <div class="listing-location">📍 Санкт-Петербург</div>
+                    <div class="listing-meta">
+                        <div class="user-info">
+                            <span class="rating">⭐ 4.8</span>
+                        </div>
+                        <div class="timestamp">2 часа назад</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
 }
 
 // Уведомления
@@ -861,13 +436,6 @@ function showError(message) {
     }
 }
 
-function showLoading(show) {
-    const loading = document.getElementById('loading');
-    if (loading) {
-        loading.style.display = show ? 'flex' : 'none';
-    }
-}
-
 // Вспомогательные функции
 function getPhoneBrand(model) {
     if (!model) return 'iphone';
@@ -892,135 +460,45 @@ function formatTime(timestamp) {
     return date.toLocaleDateString('ru-RU');
 }
 
+// Переключение вкладок
+function showTab(tabName) {
+    // Скрываем все вкладки
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active', 'showing', 'hiding');
+    });
+    
+    // Убираем активность у всех кнопок
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Показываем нужную вкладку
+    const targetTab = document.getElementById(tabName);
+    const targetBtn = document.querySelector(`[data-tab="${tabName}"]`);
+    
+    if (targetTab) {
+        targetTab.classList.add('active', 'showing');
+        setTimeout(() => {
+            targetTab.classList.remove('showing');
+        }, 500);
+    }
+    if (targetBtn) targetBtn.classList.add('active');
+    
+    // Обновляем ленту при переходе
+    if (tabName === 'feed') {
+        setTimeout(() => loadListings(), 100);
+    }
+}
+
 function editProfile() {
     showError('Редактирование профиля - скоро!');
 }
 
-function editListing(listingId) {
-    showError('Редактирование объявления - скоро!');
+function showMyListings() {
+    showError('Мои объявления - скоро!');
+    showTab('feed');
 }
 
-// Удаление объявления с сервера
-async function deleteListing(listingId) {
-    listingToDelete = listingId;
-    document.getElementById('delete-modal').style.display = 'block';
-}
-
-function closeDeleteModal() {
-    document.getElementById('delete-modal').style.display = 'none';
-    listingToDelete = null;
-}
-
-async function confirmDelete() {
-    if (!listingToDelete) return;
-    
-    try {
-        showLoading(true);
-        // Отправляем запрос на удаление на сервер
-        const response = await fetch(`${LISTINGS_API_URL}/${listingToDelete}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            // Перезагружаем объявления с сервера
-            await loadListings();
-            showSuccess('Объявление успешно удалено!');
-        } else {
-            throw new Error(result.error || 'Ошибка при удалении');
-        }
-        
-        closeDeleteModal();
-        
-    } catch (error) {
-        console.error('Ошибка при удалении объявления:', error);
-        showError('Ошибка при удалении объявления');
-    } finally {
-        showLoading(false);
-    }
-}
-
-// Функции для сделок
-async function acceptExchange(exchangeId) {
-    try {
-        const response = await fetch(`${EXCHANGES_API_URL}/${exchangeId}/accept`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        });
-        
-        if (response.ok) {
-            // Перезагружаем сделки с сервера
-            await loadActiveExchanges();
-            showSuccess('Сделка принята!');
-        } else {
-            throw new Error('Ошибка сервера');
-        }
-    } catch (error) {
-        showError('Ошибка при принятии сделки');
-    }
-}
-
-async function declineExchange(exchangeId) {
-    try {
-        const response = await fetch(`${EXCHANGES_API_URL}/${exchangeId}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        });
-        
-        if (response.ok) {
-            // Перезагружаем сделки с сервера
-            await loadActiveExchanges();
-            showSuccess('Сделка отклонена');
-        } else {
-            throw new Error('Ошибка сервера');
-        }
-    } catch (error) {
-        showError('Ошибка при отклонении сделки');
-    }
-}
-
-async function completeExchange(exchangeId) {
-    try {
-        const response = await fetch(`${EXCHANGES_API_URL}/${exchangeId}/complete`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        });
-        
-        if (response.ok) {
-            // Перезагружаем сделки с сервера
-            await loadActiveExchanges();
-            showSuccess('Сделка завершена!');
-        } else {
-            throw new Error('Ошибка сервера');
-        }
-    } catch (error) {
-        showError('Ошибка при завершении сделки');
-    }
-}
-
-function contactUser(username) {
-    if (tg && tg.openTelegramLink) {
-        tg.openTelegramLink(`https://t.me/${username.replace('@', '')}`);
-    } else {
-        showError(`Напишите пользователю: ${username}`);
-    }
-}
-
-// Модальное окно объявления
 function showListingModal(listingId) {
     const listing = allListings.find(item => item.id === listingId);
     if (!listing) return;
@@ -1028,49 +506,20 @@ function showListingModal(listingId) {
     const modalContent = document.getElementById('modal-listing-content');
     if (!modalContent) return;
     
-    // Сохраняем ID текущего объявления для сообщений
-    currentListingId = listingId;
-    currentMessageListing = listing;
-    
-    const photosHtml = listing.photos && listing.photos.length > 0 ? `
-        <div class="listing-gallery">
-            <div class="gallery-main">
-                <img src="${listing.photos[0]}" alt="${listing.phoneModel}">
-            </div>
-            ${listing.photos.length > 1 ? `
-                <div class="gallery-thumbs">
-                    ${listing.photos.map((photo, index) => `
-                        <div class="gallery-thumb ${index === 0 ? 'active' : ''}" onclick="changeMainPhoto(this, '${photo}')">
-                            <img src="${photo}" alt="${listing.phoneModel}">
-                        </div>
-                    `).join('')}
-                </div>
-            ` : ''}
-        </div>
-    ` : `
-        <div class="listing-image-large ${getPhoneBrand(listing.phoneModel)}">
-            📱<br>${listing.phoneModel}
-        </div>
-    `;
-    
     modalContent.innerHTML = `
         <div class="modal-header">
             <h3>${listing.phoneModel}</h3>
             <p class="listing-condition">${getConditionText(listing.condition)}</p>
         </div>
         <div class="modal-body">
-            ${photosHtml}
+            <div class="listing-image-large ${getPhoneBrand(listing.phoneModel)}">
+                📱<br>${listing.phoneModel}
+            </div>
             <div class="listing-details-modal">
                 <h4>Описание</h4>
                 <p>${listing.description}</p>
                 <h4>Желаемый обмен</h4>
                 <p class="desired-phone">${listing.desiredPhone}</p>
-                <div class="user-info-modal">
-                    <h4>Продавец</h4>
-                    <p><strong>${listing.userInfo?.name || 'Аноним'}</strong></p>
-                    ${listing.userInfo?.username ? `<p>@${listing.userInfo.username}</p>` : ''}
-                    <div class="rating">⭐ 5.0</div>
-                </div>
                 <div class="listing-info">
                     <span class="location">📍 ${listing.location}</span>
                     <span class="timestamp">${formatTime(listing.timestamp)}</span>
@@ -1080,19 +529,6 @@ function showListingModal(listingId) {
     `;
     
     document.getElementById('listing-modal').style.display = 'block';
-}
-
-function changeMainPhoto(thumbElement, photoUrl) {
-    const mainImage = document.querySelector('.gallery-main img');
-    if (mainImage) {
-        mainImage.src = photoUrl;
-    }
-    
-    // Обновляем активный класс
-    document.querySelectorAll('.gallery-thumb').forEach(thumb => {
-        thumb.classList.remove('active');
-    });
-    thumbElement.classList.add('active');
 }
 
 function getConditionText(condition) {
@@ -1111,69 +547,12 @@ function startExchange() {
 }
 
 function contactSeller() {
-    document.getElementById('listing-modal').style.display = 'none';
-    document.getElementById('message-modal').style.display = 'block';
+    showError('Функция связи с продавцом скоро будет доступна!');
 }
 
-function closeMessageModal() {
-    document.getElementById('message-modal').style.display = 'none';
-    currentMessageListing = null;
-}
-
-function sendMessage() {
-    const messageText = document.getElementById('message-text').value.trim();
-    
-    if (!messageText) {
-        showError('Введите сообщение');
-        return;
-    }
-    
-    if (!currentMessageListing) {
-        showError('Ошибка: объявление не найдено');
-        return;
-    }
-    
-    // В реальном приложении здесь была бы отправка сообщения
-    const sellerUsername = currentMessageListing.userInfo?.username;
-    
-    if (sellerUsername && tg && tg.openTelegramLink) {
-        const telegramUrl = `https://t.me/${sellerUsername.replace('@', '')}`;
-        tg.openTelegramLink(telegramUrl);
-    } else {
-        showSuccess(`Сообщение отправлено продавцу: "${messageText}"`);
-    }
-    
-    // Очищаем форму и закрываем модальное окно
-    document.getElementById('message-text').value = '';
-    closeMessageModal();
-}
-
-async function confirmExchange() {
-    try {
-        const response = await fetch(EXCHANGES_API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                listingId: currentListingId,
-                userId: currentUser.id
-            })
-        });
-        
-        if (response.ok) {
-            showSuccess('Обмен успешно начат! Ожидайте подтверждения.');
-            document.getElementById('exchange-modal').style.display = 'none';
-            
-            // Перезагружаем сделки
-            await loadActiveExchanges();
-        } else {
-            throw new Error('Ошибка сервера');
-        }
-        
-    } catch (error) {
-        showError('Ошибка при создании обмена');
-    }
+function confirmExchange() {
+    showSuccess('Обмен успешно начат! Ожидайте подтверждения.');
+    document.getElementById('exchange-modal').style.display = 'none';
 }
 
 // Закрытие модальных окон при клике вне контента
@@ -1184,15 +563,4 @@ window.onclick = function(event) {
             modal.style.display = 'none';
         }
     });
-}
-
-// Функция для отладки
-function debugState() {
-    console.log('=== DEBUG INFO ===');
-    console.log('Current User:', currentUser);
-    console.log('All Listings:', allListings);
-    console.log('My Listings:', myListings);
-    console.log('Uploaded Photos:', uploadedPhotos);
-    console.log('Selected City:', selectedCity);
-    console.log('==================');
 }
