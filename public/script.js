@@ -78,6 +78,16 @@ function updateProfile() {
     }
 }
 
+// Чтение файла как data URL (base64)
+function readFileAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
 function setupButtons() {
     // Навигация
     document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -143,6 +153,8 @@ async function createListing() {
     const condition = document.getElementById('phone-condition')?.value;
     const description = document.getElementById('phone-description')?.value.trim();
     const desiredPhone = document.getElementById('desired-phone')?.value.trim();
+    const photoInput = document.getElementById('phone-photo');
+    const photoFile = photoInput?.files?.[0] || null;
     const submitBtn = document.getElementById('submit-btn');
     const btnText = submitBtn.querySelector('.btn-text');
     const btnLoading = submitBtn.querySelector('.btn-loading');
@@ -153,6 +165,18 @@ async function createListing() {
     if (!phoneModel || !condition || !desiredPhone) {
         showError('Заполните обязательные поля: модель, состояние и желаемый обмен!');
         return;
+    }
+
+    // Читаем фото в base64 (если выбрано)
+    let imageData = null;
+    if (photoFile) {
+        try {
+            imageData = await readFileAsDataUrl(photoFile);
+        } catch (fileError) {
+            console.error('Ошибка чтения файла фото:', fileError);
+            showError('Не удалось прочитать файл фото. Попробуйте другое изображение.');
+            return;
+        }
     }
     
     // Показываем индикатор загрузки
@@ -166,7 +190,8 @@ async function createListing() {
         description: description || 'Нет описания',
         desiredPhone: desiredPhone,
         location: 'Москва',
-        userId: currentUser?.id
+        userId: currentUser?.id,
+        image: imageData
     };
     
     console.log('Sending data to API:', listingData);
@@ -345,7 +370,11 @@ function showListings() {
         <div class="listing-card" onclick="showListingModal('${item.id}')">
             <div class="listing-content">
                 <div class="listing-image ${getPhoneBrand(item.phoneModel)}">
-                    📱<br>${item.phoneModel}
+                    ${
+                        item.image
+                            ? `<img src="${item.image}" alt="Фото ${item.phoneModel}" class="listing-photo">`
+                            : `📱<br>${item.phoneModel}`
+                    }
                 </div>
                 <div class="listing-details">
                     <div class="listing-title">${item.phoneModel}</div>
@@ -468,7 +497,11 @@ function showListingModal(listingId) {
         </div>
         <div class="modal-body">
             <div class="listing-image-large ${getPhoneBrand(listing.phoneModel)}">
-                📱<br>${listing.phoneModel}
+                ${
+                    listing.image
+                        ? `<img src="${listing.image}" alt="Фото ${listing.phoneModel}" class="listing-photo-large">`
+                        : `📱<br>${listing.phoneModel}`
+                }
             </div>
             <div class="listing-details-modal">
                 <h4>Описание</h4>

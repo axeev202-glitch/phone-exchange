@@ -242,6 +242,17 @@ body {
     overflow: hidden;
 }
 
+/* Фото в карточке объявления */
+.listing-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 12px;
+    display: block;
+    position: relative;
+    z-index: 1;
+}
+
 .listing-image::after {
     content: '';
     position: absolute;
@@ -737,6 +748,16 @@ body {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     position: relative;
     overflow: hidden;
+}
+
+.listing-photo-large {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 15px;
+    display: block;
+    position: relative;
+    z-index: 1;
 }
 
 .listing-image-large::after {
