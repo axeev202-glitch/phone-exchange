@@ -3,7 +3,7 @@ let listings = [];
 
 // Конфигурация вашего бота
 const TELEGRAM_BOT_TOKEN = '8364853114:AAGfVhFQjq14TnoGSaMOtW3nErpYrtYzvF0';
-const TELEGRAM_CHAT_ID = '1188933834';
+const TELEGRAM_CHAT_ID = '1188933834'; // Ваш chat_id или канал
 
 // Функция отправки уведомления в Telegram
 async function sendToTelegram(listing) {
@@ -41,6 +41,19 @@ async function sendToTelegram(listing) {
     } catch (error) {
         console.error('Error sending to Telegram:', error);
         return false;
+    }
+}
+
+// Функция получения информации о боте (для проверки токена)
+async function getBotInfo() {
+    try {
+        const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getMe`);
+        const result = await response.json();
+        console.log('Bot info:', result);
+        return result;
+    } catch (error) {
+        console.error('Error getting bot info:', error);
+        return null;
     }
 }
 
@@ -152,4 +165,29 @@ export default async function handler(req, res) {
     }
 }
 
-// Убраны демо данные - теперь только пустой массив
+// Проверяем бота при запуске
+if (typeof window === 'undefined') {
+    getBotInfo().then(botInfo => {
+        if (botInfo && botInfo.ok) {
+            console.log('✅ Bot is connected:', botInfo.result.username);
+        } else {
+            console.log('❌ Bot connection failed');
+        }
+    });
+}
+
+// Демо данные для разработки
+if (process.env.NODE_ENV !== 'production' && listings.length === 0) {
+    listings = [
+        {
+            id: '1',
+            phoneModel: 'iPhone 14 Pro',
+            condition: 'excellent',
+            description: 'Отличное состояние, батарея 95%',
+            desiredPhone: 'Samsung S23',
+            location: 'Москва',
+            timestamp: new Date().toISOString(),
+            userId: 'demo_user'
+        }
+    ];
+}
