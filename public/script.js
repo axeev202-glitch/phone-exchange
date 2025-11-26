@@ -512,15 +512,16 @@ async function createListing() {
     const condition = document.getElementById('phone-condition')?.value;
     const description = document.getElementById('phone-description')?.value.trim();
     const desiredPhone = document.getElementById('desired-phone')?.value.trim();
+    const location = document.getElementById('phone-location')?.value.trim();
     const submitBtn = document.getElementById('submit-btn');
     const btnText = submitBtn.querySelector('.btn-text');
     const btnLoading = submitBtn.querySelector('.btn-loading');
     
-    console.log('Form data:', { phoneModel, condition, description, desiredPhone });
+    console.log('Form data:', { phoneModel, condition, description, desiredPhone, location });
     
     // Валидация
-    if (!phoneModel || !condition || !desiredPhone) {
-        showError('Заполните обязательные поля: модель, состояние и желаемый обмен!');
+    if (!phoneModel || !condition || !desiredPhone || !location) {
+        showError('Заполните обязательные поля: модель, состояние, желаемый обмен и город!');
         return;
     }
 
@@ -570,7 +571,7 @@ async function createListing() {
         condition: condition,
         description: description || 'Нет описания',
         desiredPhone: desiredPhone,
-        location: 'Москва',
+        location: location,
         userId: currentUser?.id,
         image: imagesData[0] || null,
         images: imagesData
@@ -839,7 +840,9 @@ function showListings() {
                             <span class="rating">⭐ ${typeof item.rating === 'number' ? item.rating.toFixed(1) : '0.0'}</span>
                             ${
                                 item.userId
-                                    ? `<button class="user-profile-link" onclick="event.stopPropagation(); openUserProfileByTelegram('${item.userId}')">Профиль продавца</button>`
+                                    ? item.userId === currentUser?.id
+                                        ? `<button class="user-profile-link" onclick="event.stopPropagation(); openMyProfile()">Мой профиль</button>`
+                                        : `<button class="user-profile-link" onclick="event.stopPropagation(); openUserProfileByTelegram('${item.userId}')">Профиль продавца</button>`
                                     : ''
                             }
                         </div>
@@ -982,6 +985,7 @@ function showMyListings() {
             <div class="empty-state">
                 <h3>Пока нет объявлений</h3>
                 <p>Создайте своё первое объявление во вкладке «Добавить».</p>
+                <button class="btn btn-secondary" onclick="openMyProfile(); document.getElementById('my-listings-modal').style.display='none';" style="margin-top: 16px;">👤 Открыть мой профиль</button>
             </div>
         `;
     } else {
@@ -1243,6 +1247,16 @@ function showListingModal(listingId) {
         </div>
     `;
     
+    // Обновляем кнопку профиля продавца в зависимости от того, свое ли это объявление
+    const profileBtn = document.querySelector('#listing-modal .modal-actions button[onclick="openSellerProfileFromModal()"]');
+    if (profileBtn) {
+        if (listing.userId === currentUser?.id) {
+            profileBtn.textContent = '👤 Мой профиль';
+        } else {
+            profileBtn.textContent = '👤 Профиль продавца';
+        }
+    }
+    
     document.getElementById('listing-modal').style.display = 'block';
 }
 
@@ -1308,7 +1322,41 @@ function openSellerProfileFromModal() {
         showError('Не удалось определить продавца для профиля.');
         return;
     }
-    openUserProfileByTelegram(currentExchangeTargetId);
+    
+    // Закрываем модалку объявления
+    const listingModal = document.getElementById('listing-modal');
+    if (listingModal) {
+        listingModal.style.display = 'none';
+    }
+    
+    // Если это свой профиль, открываем свой профиль
+    if (currentExchangeTargetId === currentUser?.id) {
+        openMyProfile();
+    } else {
+        openUserProfileByTelegram(currentExchangeTargetId);
+    }
+}
+
+// Открытие своего профиля
+function openMyProfile() {
+    if (!currentUser || !currentProfile) {
+        showError('Профиль ещё не загружен. Попробуйте позже.');
+        return;
+    }
+    
+    // Закрываем текущие модалки
+    document.querySelectorAll('.modal').forEach(modal => {
+        if (modal.style.display === 'block') {
+            modal.style.display = 'none';
+        }
+    });
+    
+    // Загружаем свои объявления
+    const myListings = allListings.filter(
+        item => item.userId === currentUser.id && !item.isDeleted && !item.isHidden
+    );
+    
+    renderUserProfileModal(currentProfile, myListings);
 }
 
 async function submitReview() {
@@ -1540,6 +1588,13 @@ function renderUserProfileModal(profile, listings) {
                 )
                 .join('');
         }
+    }
+    
+    // Скрываем кнопку "Оставить отзыв" если это свой профиль
+    const reviewButton = modal.querySelector('button[onclick="openReviewForCurrentProfile()"]');
+    if (reviewButton) {
+        const isOwnProfile = profile.telegramId === currentUser?.id;
+        reviewButton.style.display = isOwnProfile ? 'none' : 'block';
     }
 
     modal.style.display = 'block';

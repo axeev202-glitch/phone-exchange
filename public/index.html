@@ -122,6 +122,11 @@
                         <input type="text" id="desired-phone" required placeholder="На что хотите поменять?">
                     </div>
 
+                    <div class="form-group">
+                        <label>Город *</label>
+                        <input type="text" id="phone-location" required placeholder="Например: Москва">
+                    </div>
+
                     <button type="submit" class="btn btn-primary" id="submit-btn">
                         <span class="btn-text">📤 Опубликовать объявление</span>
                         <div class="btn-loading" style="display: none;">
@@ -180,6 +185,9 @@
             </div>
             <div class="modal-body" id="my-listings-content">
                 <!-- Мои объявления будут подставлены через JS -->
+            </div>
+            <div class="modal-actions" style="padding: 16px; border-top: 1px solid var(--border);">
+                <button class="btn btn-secondary" onclick="openMyProfile(); document.getElementById('my-listings-modal').style.display='none';">👤 Открыть мой профиль</button>
             </div>
         </div>
     </div>
