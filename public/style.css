@@ -760,6 +760,135 @@ body {
     z-index: 1;
 }
 
+/* ===========================
+   Неоморфизм тема (overrides)
+   =========================== */
+
+body {
+    background: #e3e6ee;
+    color: #222;
+}
+
+.container {
+    background: #e3e6ee;
+}
+
+.header {
+    background: #e3e6ee;
+    color: #222;
+    border-bottom: none;
+    box-shadow:
+        8px 8px 16px rgba(163, 177, 198, 0.6),
+        -8px -8px 16px rgba(255, 255, 255, 0.9);
+}
+
+.nav {
+    background: #e3e6ee;
+    border-bottom: none;
+    box-shadow:
+        inset 2px 2px 4px rgba(163, 177, 198, 0.4),
+        inset -2px -2px 4px rgba(255, 255, 255, 0.9);
+}
+
+.nav-btn {
+    color: #6c7a92;
+}
+
+.nav-btn.active {
+    color: #222;
+}
+
+.main-content {
+    background: transparent;
+}
+
+.listing-card,
+.profile-card,
+.exchanges-container {
+    background: #e3e6ee;
+    border-radius: 22px;
+    border: none;
+    box-shadow:
+        10px 10px 20px rgba(163, 177, 198, 0.6),
+        -10px -10px 20px rgba(255, 255, 255, 0.9);
+}
+
+.search-bar .search-input,
+input[type="text"],
+select,
+textarea {
+    background: #e3e6ee;
+    border-radius: 14px;
+    border: none;
+    box-shadow:
+        inset 4px 4px 8px rgba(163, 177, 198, 0.6),
+        inset -4px -4px 8px rgba(255, 255, 255, 0.9);
+    color: #333;
+}
+
+.search-bar .search-input::placeholder,
+input::placeholder,
+textarea::placeholder {
+    color: #9aa5b9;
+}
+
+.btn,
+.btn-primary,
+.btn-secondary {
+    border-radius: 999px;
+    border: none;
+    background: #e3e6ee;
+    color: #333;
+    box-shadow:
+        6px 6px 12px rgba(163, 177, 198, 0.7),
+        -6px -6px 12px rgba(255, 255, 255, 0.95);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.btn-primary {
+    color: #2f5fff;
+}
+
+.btn:active,
+.btn-primary:active,
+.btn-secondary:active {
+    box-shadow:
+        inset 4px 4px 8px rgba(163, 177, 198, 0.7),
+        inset -4px -4px 8px rgba(255, 255, 255, 0.95);
+    transform: translateY(1px);
+}
+
+.listing-image {
+    background: #e3e6ee;
+    box-shadow:
+        inset 4px 4px 8px rgba(163, 177, 198, 0.6),
+        inset -4px -4px 8px rgba(255, 255, 255, 0.9);
+}
+
+.listing-image-large {
+    background: #e3e6ee;
+    box-shadow:
+        inset 6px 6px 12px rgba(163, 177, 198, 0.6),
+        inset -6px -6px 12px rgba(255, 255, 255, 0.9);
+}
+
+.modal-content {
+    background: #e3e6ee;
+    border-radius: 24px;
+    box-shadow:
+        16px 16px 32px rgba(163, 177, 198, 0.7),
+        -16px -16px 32px rgba(255, 255, 255, 0.95);
+}
+
+.rating-large,
+.stat-number {
+    color: #2f5fff;
+}
+
+.empty-state {
+    color: #6c7a92;
+}
+
 .listing-image-large::after {
     content: '';
     position: absolute;
