@@ -51,7 +51,7 @@ export default async function handler(req, res) {
 
             // Инициализация / обновление профиля по Telegram
             if (!action || action === 'init') {
-                const { telegramId, username, name } = body;
+                const { telegramId, username, name, avatar } = body;
                 if (!telegramId) {
                     return res.status(400).json({ error: 'telegramId is required' });
                 }
@@ -65,6 +65,7 @@ export default async function handler(req, res) {
                         username: username || null,
                         name: name || null,
                         about: '',
+                        avatar: avatar || null,
                         rating: 0,
                         reviews: [],
                         createdAt: new Date().toISOString(),
@@ -75,6 +76,7 @@ export default async function handler(req, res) {
                 } else {
                     profile.username = username || profile.username;
                     profile.name = name || profile.name;
+                    profile.avatar = avatar || profile.avatar;
                     profile.lastSeenAt = new Date().toISOString();
                 }
 
@@ -83,7 +85,7 @@ export default async function handler(req, res) {
 
             // Обновление описания профиля
             if (action === 'update_about') {
-                const { telegramId, about } = body;
+                const { telegramId, about, avatar } = body;
                 if (!telegramId) {
                     return res.status(400).json({ error: 'telegramId is required' });
                 }
@@ -94,6 +96,9 @@ export default async function handler(req, res) {
                 }
 
                 profile.about = (about || '').trim();
+                if (avatar) {
+                    profile.avatar = avatar;
+                }
                 profile.lastSeenAt = new Date().toISOString();
 
                 return res.status(200).json(profile);
