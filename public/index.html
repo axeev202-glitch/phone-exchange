@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
     <title>AndroTrade - Обмен телефонами</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="style.css">
@@ -15,27 +15,41 @@
     <div class="container">
         <!-- Шапка -->
         <header class="header">
-            <h1 onclick="goToHome()" style="cursor: pointer;">📱 AndroTrade</h1>
-            <p>Безопасный обмен телефонами</p>
+            <div class="header-left">
+                <div class="header-logo" id="header-logo-icon"></div>
+                <div class="header-text">
+                    <h1 onclick="goToHome()" style="cursor: pointer;">AndroTrade</h1>
+                    <p>Маркетплейс смартфонов</p>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="header-icon-btn" onclick="openThemeSelector()" title="Темы" id="theme-btn-icon"></button>
+                <button class="header-icon-btn" title="Уведомления" id="bell-btn-icon"></button>
+                <button class="header-icon-btn" title="Настройки" id="settings-btn-icon"></button>
+            </div>
         </header>
 
         <!-- Навигация -->
         <nav class="nav">
             <button class="nav-btn active" data-tab="feed">
-                <span class="nav-icon">📱</span>
-                <span class="nav-label">Лента</span>
+                <span class="nav-icon" id="nav-home-icon"></span>
+                <span class="nav-label">Главная</span>
             </button>
-            <button class="nav-btn" data-tab="profile">
-                <span class="nav-icon">👤</span>
-                <span class="nav-label">Профиль</span>
+            <button class="nav-btn" data-tab="search">
+                <span class="nav-icon" id="nav-search-icon"></span>
+                <span class="nav-label">Поиск</span>
             </button>
             <button class="nav-btn" data-tab="create">
-                <span class="nav-icon">➕</span>
-                <span class="nav-label">Добавить</span>
+                <span class="nav-icon" id="nav-plus-icon"></span>
+                <span class="nav-label"></span>
             </button>
-            <button class="nav-btn" data-tab="exchanges">
-                <span class="nav-icon">🔄</span>
-                <span class="nav-label">Обмены</span>
+            <button class="nav-btn" data-tab="favorites">
+                <span class="nav-icon" id="nav-heart-icon"></span>
+                <span class="nav-label">Избранное</span>
+            </button>
+            <button class="nav-btn" data-tab="profile">
+                <span class="nav-icon" id="nav-user-icon"></span>
+                <span class="nav-label">Профиль</span>
             </button>
         </nav>
 
@@ -50,46 +64,167 @@
                     </button>
                 </div>
                 
+                <div class="category-filters">
+                    <button class="category-btn active" data-category="all">Все</button>
+                    <button class="category-btn" data-category="iphone">iPhone</button>
+                    <button class="category-btn" data-category="samsung">Samsung</button>
+                    <button class="category-btn" data-category="xiaomi">Xiaomi</button>
+                </div>
+                
+                <div class="listings-section-header">
+                    <h2 class="listings-section-title">Актуальные предложения</h2>
+                    <button class="listings-view-all">
+                        <span>Все</span>
+                        <span id="view-all-icon"></span>
+                    </button>
+                </div>
+                
                 <div class="listings-container">
                     <!-- Объявления будут добавляться через JS -->
                 </div>
             </div>
 
+            <!-- Поиск -->
+            <div id="search" class="tab-content">
+                <div class="search-bar">
+                    <div class="search-icon-wrapper" id="search-icon-2"></div>
+                    <input type="text" placeholder="Поиск телефонов..." class="search-input">
+                    <button class="filter-btn" onclick="openFiltersModal()" title="Фильтры" id="filter-btn-icon-2"></button>
+                </div>
+                <div class="listings-container">
+                    <!-- Результаты поиска -->
+                </div>
+            </div>
+
+            <!-- Избранное -->
+            <div id="favorites" class="tab-content">
+                <div class="listings-container">
+                    <!-- Избранные объявления -->
+                </div>
+            </div>
+
             <!-- Профиль -->
             <div id="profile" class="tab-content">
-                <div class="profile-card">
-                    <div class="avatar">👤</div>
-                    <h3 id="user-name">Загрузка...</h3>
-                    <p id="user-username"></p>
-                    <div class="rating-large">⭐ 5.0</div>
-                    <p id="user-about" class="profile-about">Добавьте короткое описание о себе — это увидят другие пользователи.</p>
-                    
-                    <div class="profile-stats">
-                        <div class="stat">
-                            <span class="stat-number" id="active-listings">0</span>
-                            <span class="stat-label">Активные</span>
+                <div class="profile-content-wrapper">
+                    <!-- Avatar -->
+                    <div class="user-profile-avatar-wrapper">
+                        <div class="user-profile-avatar-container">
+                            <div class="avatar user-profile-avatar-large" id="profile-avatar">👤</div>
                         </div>
-                        <div class="stat">
-                            <span class="stat-number" id="completed-exchanges">0</span>
-                            <span class="stat-label">Обмены</span>
-                        </div>
+                        <button class="user-profile-edit-avatar-btn" id="profile-edit-avatar" style="display: none;" onclick="openEditProfile()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                        </button>
                     </div>
 
-                    <div class="profile-id-row">
-                        <span class="profile-id-label">ID профиля для бота:</span>
-                        <span class="profile-id-value" id="user-public-id">—</span>
+                    <!-- User Info -->
+                    <div class="user-profile-info">
+                        <h1 id="profile-name" class="user-profile-name">Профиль пользователя</h1>
+                        <div class="user-profile-meta">
+                            <div class="user-profile-meta-item" id="profile-location">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+                                    <circle cx="12" cy="10" r="3"/>
+                                </svg>
+                                <span>Не указано</span>
+                            </div>
+                            <div class="user-profile-meta-item" id="profile-joined">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                    <line x1="16" y1="2" x2="16" y2="6"/>
+                                    <line x1="8" y1="2" x2="8" y2="6"/>
+                                    <line x1="3" y1="10" x2="21" y2="10"/>
+                                </svg>
+                                <span>2 мин назад</span>
+                            </div>
+                        </div>
+                        <p id="profile-about" class="user-profile-about">Пользователь пока не рассказал о себе.</p>
+                        
+                        <!-- Settings Button -->
+                        <button class="user-profile-settings-btn" id="profile-settings-btn" onclick="openEditProfile()" style="display: none;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                            <span>Настройки</span>
+                        </button>
+
+                        <!-- Stats -->
+                        <div class="user-profile-stats-grid">
+                            <div class="user-stat-card">
+                                <div class="user-stat-icon">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                                    </svg>
+                                </div>
+                                <div class="user-stat-number" id="profile-rating-number">0.0</div>
+                                <div class="user-stat-label">Рейтинг</div>
+                            </div>
+                            <div class="user-stat-card">
+                                <div class="user-stat-icon">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="m7.5 4.27 9 5.15"/>
+                                        <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+                                        <path d="m3.3 7 8.7 5 8.7-5"/>
+                                        <path d="M12 22V12"/>
+                                    </svg>
+                                </div>
+                                <div class="user-stat-number" id="profile-active-count">0</div>
+                                <div class="user-stat-label">Товаров</div>
+                            </div>
+                            <div class="user-stat-card">
+                                <div class="user-stat-icon">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
+                                        <polyline points="16 7 22 7 22 13"/>
+                                    </svg>
+                                </div>
+                                <div class="user-stat-number" id="profile-sales-count">0</div>
+                                <div class="user-stat-label">Продаж</div>
+                            </div>
+                            <div class="user-stat-card">
+                                <div class="user-stat-icon">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                                    </svg>
+                                </div>
+                                <div class="user-stat-number" id="profile-reviews-count">0</div>
+                                <div class="user-stat-label">Отзывов</div>
+                            </div>
+                        </div>
+
+                        <!-- Contact Info -->
+                        <div class="user-profile-contact-info" id="profile-contact-info" style="display: none;">
+                            <h3>Контактная информация</h3>
+                            <div class="user-profile-contact-grid">
+                                <div class="user-profile-contact-item">
+                                    <div class="user-profile-contact-icon">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="user-profile-contact-label">Телефон</p>
+                                        <p class="user-profile-contact-value" id="profile-phone">—</p>
+                                    </div>
+                                </div>
+                                <div class="user-profile-contact-item">
+                                    <div class="user-profile-contact-icon">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <rect x="2" y="4" width="20" height="16" rx="2"/>
+                                            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="user-profile-contact-label">Email</p>
+                                        <p class="user-profile-contact-value" id="profile-email">—</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
-
-                <div class="profile-actions">
-                    <button class="btn btn-secondary" onclick="editProfile()">✏️ Редактировать профиль</button>
-                    <button class="btn btn-secondary" onclick="showMyListings()">📱 Мои объявления</button>
-                    <button class="btn btn-secondary" onclick="showMyReviews()">⭐ Мои отзывы</button>
-                    <button class="btn btn-secondary" onclick="shareMyProfile()">🔗 Поделиться профилем</button>
-                </div>
-
-                <div class="profile-reviews-preview" id="profile-reviews-preview">
-                    <!-- Краткий список последних отзывов будет отрисован через JS -->
                 </div>
             </div>
 
@@ -177,12 +312,21 @@
 
                     <div class="form-group">
                         <label>Хочу обмен</label>
-                        <input type="text" id="desired-phone" required placeholder="На что хотите поменять?">
+                        <select id="exchange-type" onchange="toggleDesiredPhoneInput()">
+                            <option value="yes">Хочу обмен</option>
+                            <option value="no">Не хочу меняться</option>
+                        </select>
+                        <input type="text" id="desired-phone" placeholder="На что хотите поменять?" style="margin-top: 10px; display: block;">
                     </div>
 
                     <div class="form-group">
                         <label>Город</label>
                         <input type="text" id="phone-location" required placeholder="Например: Москва">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Цена (₽)</label>
+                        <input type="number" id="phone-price" placeholder="Укажите цену в рублях" min="0" step="100">
                     </div>
 
                     <button type="submit" class="btn btn-primary" id="submit-btn">
@@ -207,15 +351,12 @@
 
     <!-- Модальное окно объявления -->
     <div id="listing-modal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
+        <div class="modal-content listing-detail-modal-content">
             <div id="modal-listing-content">
                 <!-- Контент объявления -->
             </div>
-            <div class="modal-actions">
-                <button class="btn btn-secondary" onclick="openSellerProfileFromModal()">👤 Профиль продавца</button>
-                <button class="btn btn-primary" onclick="startExchange()">🔄 Начать обмен</button>
-                <button class="btn btn-secondary" onclick="contactSeller()">💌 Написать продавцу</button>
+            <div class="listing-detail-actions" id="listing-detail-actions">
+                <!-- Кнопки действий будут добавлены через JS -->
             </div>
         </div>
     </div>
@@ -250,6 +391,124 @@
         </div>
     </div>
 
+    <!-- Модальное окно редактирования объявления -->
+    <div id="edit-listing-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeEditListingModal()">&times;</span>
+            <div class="modal-header">
+                <h3>✏️ Редактировать объявление</h3>
+            </div>
+            <form id="edit-listing-form" class="listing-form" style="margin: 0; padding: 20px;">
+                <div class="form-group">
+                    <label>Модель телефона</label>
+                    <input type="text" id="edit-phone-model" required placeholder="Например: iPhone 14 Pro">
+                </div>
+
+                <div class="form-group">
+                    <label>Состояние</label>
+                    <select id="edit-phone-condition" required>
+                        <option value="">Выберите состояние</option>
+                        <option value="new">Новый</option>
+                        <option value="excellent">Отличное</option>
+                        <option value="good">Хорошее</option>
+                        <option value="satisfactory">Удовлетворительное</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Описание</label>
+                    <textarea id="edit-phone-description" placeholder="Опишите особенности, комплектацию..." rows="3"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Ценовой сегмент</label>
+                    <select id="edit-phone-price-segment">
+                        <option value="">Не указано</option>
+                        <option value="budget">Бюджетный</option>
+                        <option value="mid-range">Средний</option>
+                        <option value="sub-flagship">Субфлагман</option>
+                        <option value="flagship">Флагман</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Память</label>
+                    <select id="edit-phone-storage">
+                        <option value="">Не указано</option>
+                        <option value="64">64 ГБ</option>
+                        <option value="128">128 ГБ</option>
+                        <option value="256">256 ГБ</option>
+                        <option value="512">512 ГБ</option>
+                        <option value="1024">1 ТБ</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Оперативная память (ГБ)</label>
+                    <select id="edit-phone-ram">
+                        <option value="">Не указано</option>
+                        <option value="1">1 ГБ</option>
+                        <option value="2">2 ГБ</option>
+                        <option value="4">4 ГБ</option>
+                        <option value="6">6 ГБ</option>
+                        <option value="8">8 ГБ</option>
+                        <option value="10">10 ГБ</option>
+                        <option value="12">12 ГБ</option>
+                        <option value="14">14 ГБ</option>
+                        <option value="16">16 ГБ</option>
+                        <option value="18">18 ГБ</option>
+                        <option value="20">20 ГБ</option>
+                        <option value="22">22 ГБ</option>
+                        <option value="24">24 ГБ</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Хочу обмен</label>
+                    <select id="edit-exchange-type" onchange="toggleEditDesiredPhoneInput()">
+                        <option value="yes">Хочу обмен</option>
+                        <option value="no">Не хочу меняться</option>
+                    </select>
+                    <input type="text" id="edit-desired-phone" placeholder="На что хотите поменять?" style="margin-top: 10px; display: block;">
+                </div>
+
+                <div class="form-group">
+                    <label>Город</label>
+                    <input type="text" id="edit-phone-location" required placeholder="Например: Москва">
+                </div>
+
+                <div class="form-group">
+                    <label>Цена (₽)</label>
+                    <input type="number" id="edit-phone-price" placeholder="Укажите цену в рублях" min="0" step="100">
+                </div>
+
+                <div class="form-group">
+                    <label>Фото (необязательно)</label>
+                    <div class="photo-upload">
+                        <div class="photo-upload-icon">📷</div>
+                        <div class="photo-upload-text">
+                            <span class="photo-upload-title">Изменить фото телефона</span>
+                            <span class="photo-upload-subtitle">Можно выбрать несколько файлов</span>
+                        </div>
+                        <input type="file" id="edit-phone-photo" accept="image/*" multiple>
+                    </div>
+                    <div id="edit-photo-preview-list" class="photo-preview-list"></div>
+                </div>
+
+                <div class="modal-actions" style="padding: 0; border-top: none; margin-top: 20px;">
+                    <button type="submit" class="btn btn-primary" id="edit-submit-btn">
+                        <span class="btn-text">💾 Сохранить изменения</span>
+                        <div class="btn-loading" style="display: none;">
+                            <div class="loading-spinner"></div>
+                            <span>Сохранение...</span>
+                        </div>
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeEditListingModal()" style="margin-top: 10px;">Отмена</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Модальное окно моих отзывов -->
     <div id="my-reviews-modal" class="modal">
         <div class="modal-content">
@@ -265,34 +524,167 @@
 
     <!-- Модальное окно профиля продавца -->
     <div id="user-profile-modal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <div class="modal-header user-profile-header">
-                <div class="user-profile-header-main">
-                    <div class="avatar user-profile-avatar" id="user-profile-avatar">👤</div>
-                    <div class="user-profile-header-text">
-                        <h3 id="user-profile-name">Профиль пользователя</h3>
-                        <p id="user-profile-username" class="user-profile-username"></p>
-                        <div id="user-profile-rating" class="rating-large">⭐ 0.0</div>
+        <div class="modal-content user-profile-modal-content">
+            <button class="user-profile-close-btn" onclick="document.getElementById('user-profile-modal').style.display='none'">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+            <div class="modal-body user-profile-body">
+                <!-- Avatar -->
+                <div class="user-profile-avatar-wrapper">
+                    <div class="user-profile-avatar-container">
+                        <div class="avatar user-profile-avatar-large" id="user-profile-avatar">👤</div>
                     </div>
-                </div>
-                <div class="profile-id-row">
-                    <span class="profile-id-label">ID профиля:</span>
-                    <span class="profile-id-value" id="user-profile-public-id">—</span>
-                </div>
-            </div>
-            <div class="modal-body">
-                <p id="user-profile-about" class="profile-about"></p>
-
-                <div class="user-profile-section">
-                    <h4>Активные объявления</h4>
-                    <div id="user-profile-listings" class="user-profile-listings"></div>
+                    <button class="user-profile-edit-avatar-btn" id="user-profile-edit-avatar" style="display: none;" onclick="openEditProfile()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                    </button>
                 </div>
 
-                <div class="user-profile-section">
-                    <h4>Отзывы</h4>
-                    <div id="user-profile-reviews" class="user-profile-reviews"></div>
-                    <button class="btn btn-secondary" onclick="openReviewForCurrentProfile()">⭐ Оставить отзыв</button>
+                <!-- User Info -->
+                <div class="user-profile-info">
+                    <h1 id="user-profile-name" class="user-profile-name">Test User</h1>
+                    <div id="user-profile-username" class="user-profile-username">@test_user</div>
+                    <div class="user-profile-rating-display">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="#111827" stroke="#111827" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                        </svg>
+                        <span id="user-profile-rating-display-number">0.0</span>
+                    </div>
+                    <p id="user-profile-about" class="user-profile-about">Добавьте короткое описание о себе — это увидят другие пользователи.</p>
+                    
+                    <!-- Divider -->
+                    <div class="user-profile-divider"></div>
+                    
+                    <!-- Stats -->
+                    <div class="user-profile-simple-stats">
+                        <div class="user-profile-simple-stat">
+                            <div class="user-profile-simple-stat-number" id="user-profile-active-count-simple">0</div>
+                            <div class="user-profile-simple-stat-label">Активные</div>
+                        </div>
+                        <div class="user-profile-simple-stat">
+                            <div class="user-profile-simple-stat-number" id="user-profile-sales-count-simple">0</div>
+                            <div class="user-profile-simple-stat-label">Обмены</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Divider -->
+                    <div class="user-profile-divider"></div>
+                    
+                    <!-- Profile ID -->
+                    <div class="user-profile-id" id="user-profile-id">ID профиля для бота: <span id="user-profile-public-id">—</span></div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="user-profile-action-buttons">
+                        <button class="user-profile-action-button" onclick="openEditProfile()">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #f97316;">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                            <span>Редактировать профиль</span>
+                        </button>
+                        <button class="user-profile-action-button" onclick="showMyListings()">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #a855f7;">
+                                <rect x="3" y="3" width="7" height="7"/>
+                                <rect x="14" y="3" width="7" height="7"/>
+                                <rect x="3" y="14" width="7" height="7"/>
+                                <rect x="14" y="14" width="7" height="7"/>
+                            </svg>
+                            <span>Мои объявления</span>
+                        </button>
+                        <button class="user-profile-action-button" onclick="showMyReviews()">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #fbbf24;">
+                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                            </svg>
+                            <span>Мои отзывы</span>
+                        </button>
+                        <button class="user-profile-action-button" onclick="shareProfile()">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #6b7280;">
+                                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+                                <polyline points="16 6 12 2 8 6"/>
+                                <line x1="12" y1="2" x2="12" y2="15"/>
+                            </svg>
+                            <span>Поделиться профилем</span>
+                        </button>
+                    </div>
+
+                    <!-- Stats -->
+                    <div class="user-profile-stats-grid">
+                        <div class="user-stat-card">
+                            <div class="user-stat-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                                </svg>
+                            </div>
+                            <div class="user-stat-number" id="user-profile-rating-number">0.0</div>
+                            <div class="user-stat-label">Рейтинг</div>
+                        </div>
+                        <div class="user-stat-card">
+                            <div class="user-stat-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="m7.5 4.27 9 5.15"/>
+                                    <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+                                    <path d="m3.3 7 8.7 5 8.7-5"/>
+                                    <path d="M12 22V12"/>
+                                </svg>
+                            </div>
+                            <div class="user-stat-number" id="user-profile-active-count">0</div>
+                            <div class="user-stat-label">Товаров</div>
+                        </div>
+                        <div class="user-stat-card">
+                            <div class="user-stat-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
+                                    <polyline points="16 7 22 7 22 13"/>
+                                </svg>
+                            </div>
+                            <div class="user-stat-number" id="user-profile-sales-count">0</div>
+                            <div class="user-stat-label">Продаж</div>
+                        </div>
+                        <div class="user-stat-card">
+                            <div class="user-stat-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                                </svg>
+                            </div>
+                            <div class="user-stat-number" id="user-profile-reviews-count">0</div>
+                            <div class="user-stat-label">Отзывов</div>
+                        </div>
+                    </div>
+
+                    <!-- Contact Info (only for own profile) -->
+                    <div class="user-profile-contact-info" id="user-profile-contact-info" style="display: none;">
+                        <h3>Контактная информация</h3>
+                        <div class="user-profile-contact-grid">
+                            <div class="user-profile-contact-item">
+                                <div class="user-profile-contact-icon">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="user-profile-contact-label">Телефон</p>
+                                    <p class="user-profile-contact-value" id="user-profile-phone">—</p>
+                                </div>
+                            </div>
+                            <div class="user-profile-contact-item">
+                                <div class="user-profile-contact-icon">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="2" y="4" width="20" height="16" rx="2"/>
+                                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="user-profile-contact-label">Email</p>
+                                    <p class="user-profile-contact-value" id="user-profile-email">—</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -316,6 +708,22 @@
                         </div>
                         <input type="file" id="profile-avatar-input" accept="image/*">
                     </div>
+                </div>
+                <div class="form-group">
+                    <label for="profile-name-input">Имя</label>
+                    <input type="text" id="profile-name-input" placeholder="Ваше имя">
+                </div>
+                <div class="form-group">
+                    <label for="profile-location-input">Город</label>
+                    <input type="text" id="profile-location-input" placeholder="Например: Москва">
+                </div>
+                <div class="form-group">
+                    <label for="profile-phone-input">Телефон</label>
+                    <input type="tel" id="profile-phone-input" placeholder="+7 (999) 123-45-67">
+                </div>
+                <div class="form-group">
+                    <label for="profile-email-input">Email</label>
+                    <input type="email" id="profile-email-input" placeholder="your.email@example.com">
                 </div>
                 <div class="form-group">
                     <label for="profile-about-input">О себе</label>
@@ -355,143 +763,212 @@
 
     <!-- Модальное окно фильтров -->
     <div id="filters-modal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <div class="modal-header">
-                <h3>⚙️ Фильтры</h3>
+        <div class="modal-content filters-modal-content">
+            <div class="filters-modal-header">
+                <div class="filters-modal-title">
+                    <span id="filters-modal-icon"></span>
+                    <h3>Фильтры</h3>
+                </div>
+                <span class="close">&times;</span>
             </div>
-            <div class="modal-body">
+            <div class="modal-body filters-modal-body">
                 <div class="filter-section">
-                    <h4 class="filter-section-title">💰 Ценовой сегмент</h4>
+                    <h4 class="filter-section-title">
+                        <span class="filter-section-icon" style="color: #f97316;">💰</span>
+                        Ценовой сегмент
+                    </h4>
                     <div class="filter-options">
-                        <label class="filter-option">
-                            <input type="checkbox" class="filter-checkbox" data-filter="price-segment" value="budget">
-                            <span class="filter-icon">💵</span>
+                        <button type="button" class="filter-chip" data-filter="price-segment" data-value="budget">
+                            <span class="filter-chip-icon" style="color: #10b981;">❤️</span>
                             <span>Бюджетный</span>
-                        </label>
-                        <label class="filter-option">
-                            <input type="checkbox" class="filter-checkbox" data-filter="price-segment" value="mid-range">
-                            <span class="filter-icon">💴</span>
+                        </button>
+                        <button type="button" class="filter-chip" data-filter="price-segment" data-value="mid-range">
+                            <span class="filter-chip-icon" style="color: #f97316;">⬜</span>
                             <span>Средний</span>
-                        </label>
-                        <label class="filter-option">
-                            <input type="checkbox" class="filter-checkbox" data-filter="price-segment" value="sub-flagship">
-                            <span class="filter-icon">⭐</span>
+                        </button>
+                        <button type="button" class="filter-chip" data-filter="price-segment" data-value="sub-flagship">
+                            <span class="filter-chip-icon" style="color: #fbbf24;">⭐</span>
                             <span>Субфлагман</span>
-                        </label>
-                        <label class="filter-option">
-                            <input type="checkbox" class="filter-checkbox" data-filter="price-segment" value="flagship">
-                            <span class="filter-icon">👑</span>
+                        </button>
+                        <button type="button" class="filter-chip" data-filter="price-segment" data-value="flagship">
+                            <span class="filter-chip-icon" style="color: #fbbf24;">👑</span>
                             <span>Флагман</span>
-                        </label>
+                        </button>
                     </div>
                 </div>
 
                 <div class="filter-section">
-                    <h4 class="filter-section-title">💾 Память</h4>
+                    <h4 class="filter-section-title">
+                        <span class="filter-section-icon" style="color: #a855f7;">💾</span>
+                        Память
+                    </h4>
                     <div class="filter-options">
-                        <label class="filter-option">
-                            <input type="checkbox" class="filter-checkbox" data-filter="storage" value="64">
-                            <span class="filter-icon">💾</span>
-                            <span>64 ГБ</span>
-                        </label>
-                        <label class="filter-option">
-                            <input type="checkbox" class="filter-checkbox" data-filter="storage" value="128">
-                            <span class="filter-icon">💾</span>
-                            <span>128 ГБ</span>
-                        </label>
-                        <label class="filter-option">
-                            <input type="checkbox" class="filter-checkbox" data-filter="storage" value="256">
-                            <span class="filter-icon">💾</span>
-                            <span>256 ГБ</span>
-                        </label>
-                        <label class="filter-option">
-                            <input type="checkbox" class="filter-checkbox" data-filter="storage" value="512">
-                            <span class="filter-icon">💾</span>
-                            <span>512 ГБ</span>
-                        </label>
-                        <label class="filter-option">
-                            <input type="checkbox" class="filter-checkbox" data-filter="storage" value="1024">
-                            <span class="filter-icon">💾</span>
-                            <span>1 ТБ</span>
-                        </label>
+                        <button type="button" class="filter-chip" data-filter="storage" data-value="64">64 ГБ</button>
+                        <button type="button" class="filter-chip" data-filter="storage" data-value="128">128 ГБ</button>
+                        <button type="button" class="filter-chip" data-filter="storage" data-value="256">256 ГБ</button>
+                        <button type="button" class="filter-chip" data-filter="storage" data-value="512">512 ГБ</button>
+                        <button type="button" class="filter-chip" data-filter="storage" data-value="1024">1 ТБ</button>
                     </div>
                 </div>
 
                 <div class="filter-section">
-                    <h4 class="filter-section-title">🚀 Оперативная память</h4>
-                    <div class="filter-options">
-                        <label class="filter-option">
-                            <input type="checkbox" class="filter-checkbox" data-filter="ram" value="1">
-                            <span class="filter-icon">🚀</span>
-                            <span>1 ГБ</span>
-                        </label>
-                        <label class="filter-option">
-                            <input type="checkbox" class="filter-checkbox" data-filter="ram" value="2">
-                            <span class="filter-icon">🚀</span>
-                            <span>2 ГБ</span>
-                        </label>
-                        <label class="filter-option">
-                            <input type="checkbox" class="filter-checkbox" data-filter="ram" value="4">
-                            <span class="filter-icon">🚀</span>
-                            <span>4 ГБ</span>
-                        </label>
-                        <label class="filter-option">
-                            <input type="checkbox" class="filter-checkbox" data-filter="ram" value="6">
-                            <span class="filter-icon">🚀</span>
-                            <span>6 ГБ</span>
-                        </label>
-                        <label class="filter-option">
-                            <input type="checkbox" class="filter-checkbox" data-filter="ram" value="8">
-                            <span class="filter-icon">🚀</span>
-                            <span>8 ГБ</span>
-                        </label>
-                        <label class="filter-option">
-                            <input type="checkbox" class="filter-checkbox" data-filter="ram" value="10">
-                            <span class="filter-icon">🚀</span>
-                            <span>10 ГБ</span>
-                        </label>
-                        <label class="filter-option">
-                            <input type="checkbox" class="filter-checkbox" data-filter="ram" value="12">
-                            <span class="filter-icon">🚀</span>
-                            <span>12 ГБ</span>
-                        </label>
-                        <label class="filter-option">
-                            <input type="checkbox" class="filter-checkbox" data-filter="ram" value="14">
-                            <span class="filter-icon">🚀</span>
-                            <span>14 ГБ</span>
-                        </label>
-                        <label class="filter-option">
-                            <input type="checkbox" class="filter-checkbox" data-filter="ram" value="16">
-                            <span class="filter-icon">🚀</span>
-                            <span>16 ГБ</span>
-                        </label>
-                        <label class="filter-option">
-                            <input type="checkbox" class="filter-checkbox" data-filter="ram" value="18">
-                            <span class="filter-icon">🚀</span>
-                            <span>18 ГБ</span>
-                        </label>
-                        <label class="filter-option">
-                            <input type="checkbox" class="filter-checkbox" data-filter="ram" value="20">
-                            <span class="filter-icon">🚀</span>
-                            <span>20 ГБ</span>
-                        </label>
-                        <label class="filter-option">
-                            <input type="checkbox" class="filter-checkbox" data-filter="ram" value="22">
-                            <span class="filter-icon">🚀</span>
-                            <span>22 ГБ</span>
-                        </label>
-                        <label class="filter-option">
-                            <input type="checkbox" class="filter-checkbox" data-filter="ram" value="24">
-                            <span class="filter-icon">🚀</span>
-                            <span>24 ГБ</span>
-                        </label>
+                    <h4 class="filter-section-title">
+                        <span class="filter-section-icon" style="color: #ef4444;">🚀</span>
+                        Оперативная память
+                    </h4>
+                    <div class="filter-options filter-options-ram">
+                        <button type="button" class="filter-chip" data-filter="ram" data-value="1">1 ГБ</button>
+                        <button type="button" class="filter-chip" data-filter="ram" data-value="2">2 ГБ</button>
+                        <button type="button" class="filter-chip" data-filter="ram" data-value="4">4 ГБ</button>
+                        <button type="button" class="filter-chip" data-filter="ram" data-value="6">6 ГБ</button>
+                        <button type="button" class="filter-chip" data-filter="ram" data-value="8">8 ГБ</button>
+                        <button type="button" class="filter-chip" data-filter="ram" data-value="10">10 ГБ</button>
+                        <button type="button" class="filter-chip" data-filter="ram" data-value="12">12 ГБ</button>
+                        <button type="button" class="filter-chip" data-filter="ram" data-value="14">14 ГБ</button>
+                        <button type="button" class="filter-chip" data-filter="ram" data-value="16">16 ГБ</button>
+                        <button type="button" class="filter-chip" data-filter="ram" data-value="18">18 ГБ</button>
+                        <button type="button" class="filter-chip" data-filter="ram" data-value="20">20 ГБ</button>
+                        <button type="button" class="filter-chip" data-filter="ram" data-value="22">22 ГБ</button>
+                        <button type="button" class="filter-chip" data-filter="ram" data-value="24">24 ГБ</button>
                     </div>
                 </div>
 
                 <div class="filter-actions">
-                    <button class="btn btn-secondary" onclick="clearFilters()">Очистить</button>
-                    <button class="btn btn-primary" onclick="applyFilters()">Применить</button>
+                    <button class="btn btn-filter-clear" onclick="clearFilters()">Очистить</button>
+                    <button class="btn btn-filter-apply" onclick="applyFilters()">Применить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно выбора темы -->
+    <div id="theme-selector-modal" class="modal">
+        <div class="modal-content theme-selector-content">
+            <span class="close">&times;</span>
+            <div class="modal-header theme-selector-header">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div class="theme-selector-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/>
+                            <circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/>
+                            <circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/>
+                            <circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/>
+                            <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3>Выбор темы</h3>
+                        <p style="font-size: 0.85em; color: #6b7280; margin: 4px 0 0 0;">Выберите цветовую схему</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="theme-grid">
+                    <div class="theme-card" data-theme="ocean" onclick="setTheme('ocean')">
+                        <div class="theme-preview ocean-preview">
+                            <div class="theme-preview-bg ocean-bg"></div>
+                            <div class="theme-preview-card ocean-card"></div>
+                            <div class="theme-preview-accent ocean-accent"></div>
+                        </div>
+                        <div class="theme-card-name">
+                            <span>Ocean Blue</span>
+                            <span class="theme-check" style="display: none;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"/>
+                                </svg>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="theme-card" data-theme="white" onclick="setTheme('white')">
+                        <div class="theme-preview white-preview">
+                            <div class="theme-preview-bg white-bg"></div>
+                            <div class="theme-preview-card white-card"></div>
+                            <div class="theme-preview-accent white-accent"></div>
+                        </div>
+                        <div class="theme-card-name">
+                            <span>Строгий белый</span>
+                            <span class="theme-check" style="display: none;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"/>
+                                </svg>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="theme-card" data-theme="black" onclick="setTheme('black')">
+                        <div class="theme-preview black-preview">
+                            <div class="theme-preview-bg black-bg"></div>
+                            <div class="theme-preview-card black-card"></div>
+                            <div class="theme-preview-accent black-accent"></div>
+                        </div>
+                        <div class="theme-card-name">
+                            <span>Строгий черный</span>
+                            <span class="theme-check" style="display: none;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"/>
+                                </svg>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="theme-card" data-theme="sunset" onclick="setTheme('sunset')">
+                        <div class="theme-preview sunset-preview">
+                            <div class="theme-preview-bg sunset-bg"></div>
+                            <div class="theme-preview-card sunset-card"></div>
+                            <div class="theme-preview-accent sunset-accent"></div>
+                        </div>
+                        <div class="theme-card-name">
+                            <span>Sunset</span>
+                            <span class="theme-check" style="display: none;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"/>
+                                </svg>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="theme-card" data-theme="forest" onclick="setTheme('forest')">
+                        <div class="theme-preview forest-preview">
+                            <div class="theme-preview-bg forest-bg"></div>
+                            <div class="theme-preview-card forest-card"></div>
+                            <div class="theme-preview-accent forest-accent"></div>
+                        </div>
+                        <div class="theme-card-name">
+                            <span>Forest</span>
+                            <span class="theme-check" style="display: none;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"/>
+                                </svg>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="theme-card" data-theme="neon" onclick="setTheme('neon')">
+                        <div class="theme-preview neon-preview">
+                            <div class="theme-preview-bg neon-bg"></div>
+                            <div class="theme-preview-card neon-card"></div>
+                            <div class="theme-preview-accent neon-accent"></div>
+                        </div>
+                        <div class="theme-card-name">
+                            <span>Neon Cyber</span>
+                            <span class="theme-check" style="display: none;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"/>
+                                </svg>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="theme-card" data-theme="royal" onclick="setTheme('royal')">
+                        <div class="theme-preview royal-preview">
+                            <div class="theme-preview-bg royal-bg"></div>
+                            <div class="theme-preview-card royal-card"></div>
+                            <div class="theme-preview-accent royal-accent"></div>
+                        </div>
+                        <div class="theme-card-name">
+                            <span>Royal Purple</span>
+                            <span class="theme-check" style="display: none;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"/>
+                                </svg>
+                            </span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -505,6 +982,7 @@
         </div>
     </div>
 
+    <script src="icons.js"></script>
     <script src="script.js"></script>
     <script>
         // Скрываем индикатор загрузки
