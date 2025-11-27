@@ -4,11 +4,13 @@ import path from 'path';
 
 // Простое хранилище профилей пользователей в памяти
 let users = [];
+let listings = [];
 
 // Путь к файлу данных (для Vercel используем /tmp, для локальной разработки - корень проекта)
 // Используем тот же файл, что и основной API users.js
 const DATA_DIR = process.env.VERCEL ? '/tmp' : process.cwd();
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
+const LISTINGS_FILE = path.join(DATA_DIR, 'listings.json');
 
 // Функция загрузки профилей из файла
 function loadUsersFromFile() {
@@ -28,8 +30,27 @@ function loadUsersFromFile() {
     }
 }
 
+// Функция загрузки объявлений из файла
+function loadListingsFromFile() {
+    try {
+        if (fs.existsSync(LISTINGS_FILE)) {
+            const data = fs.readFileSync(LISTINGS_FILE, 'utf8');
+            const loaded = JSON.parse(data);
+            listings = Array.isArray(loaded) ? loaded : [];
+            console.log(`✅ Загружено ${listings.length} объявлений из файла`);
+        } else {
+            listings = [];
+            console.log('📝 Файл объявлений не найден, создан новый массив');
+        }
+    } catch (error) {
+        console.error('❌ Ошибка загрузки объявлений из файла:', error);
+        listings = [];
+    }
+}
+
 // Загружаем данные при инициализации модуля
 loadUsersFromFile();
+loadListingsFromFile();
 
 export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -43,11 +64,30 @@ export default async function handler(req, res) {
     try {
         // Перезагружаем данные из файла перед каждым запросом
         loadUsersFromFile();
+        loadListingsFromFile();
 
         if (req.method === 'GET') {
             const { page = 1, limit = 50, search = '', sortBy = 'createdAt', sortOrder = 'desc' } = req.query || {};
             
-            let filteredUsers = [...users];
+            // Обогащаем пользователей информацией об объявлениях
+            const enrichedUsers = users.map(user => {
+                const userListings = listings.filter(l => l.userId === user.telegramId);
+                const activeListings = userListings.filter(l => !l.isDeleted && !l.isHidden && l.status === 'active');
+                const deletedListings = userListings.filter(l => l.isDeleted === true);
+                const soldListings = userListings.filter(l => l.status === 'sold' || l.status === 'completed');
+                
+                return {
+                    ...user,
+                    listingsStats: {
+                        total: userListings.length,
+                        active: activeListings.length,
+                        deleted: deletedListings.length,
+                        sold: soldListings.length
+                    }
+                };
+            });
+            
+            let filteredUsers = [...enrichedUsers];
             
             // Поиск по имени, username, telegramId или publicId
             if (search) {
