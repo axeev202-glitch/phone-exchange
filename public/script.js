@@ -219,11 +219,13 @@ async function initApp() {
         console.log('Test user:', currentUser);
     }
     
-    // Инициализируем профиль пользователя на сервере
+    // Инициализируем профиль пользователя на сервере (авторегистрация при первом входе)
     try {
         await initUserProfile();
-    updateProfile();
+        updateProfile();
         await loadListings();
+        // Обновляем время последнего визита после загрузки
+        updateLastSeen();
     } catch (error) {
         console.error('Ошибка инициализации профиля:', error);
         updateProfile();
@@ -302,6 +304,29 @@ async function initUserProfile() {
     } catch (error) {
         console.error('Failed to initialize profile:', error);
         throw error;
+    }
+}
+
+// Обновление времени последнего визита пользователя
+async function updateLastSeen() {
+    if (!currentUser || !currentUser.id) return;
+    
+    try {
+        await fetch(USERS_API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                action: 'init',
+                telegramId: currentUser.id,
+                username: currentUser.username,
+                name: currentUser.name,
+                avatar: currentUser.photoUrl || null
+            })
+        });
+    } catch (error) {
+        console.error('Ошибка обновления lastSeenAt:', error);
     }
 }
 
@@ -967,6 +992,9 @@ async function createListing() {
             selectedPhotoFiles = [];
             const previewList = document.getElementById('photo-preview-list');
             if (previewList) previewList.innerHTML = '';
+            
+            // Обновляем время последнего визита
+            updateLastSeen();
             
         } else {
             // Ошибка от API
@@ -1838,6 +1866,8 @@ async function deleteListing(id) {
         showMyListings();
         showListings();
         updateProfileStats();
+        // Обновляем время последнего визита
+        updateLastSeen();
     } catch (error) {
         console.error('Ошибка удаления объявления:', error);
         showError('Не удалось удалить объявление.');
@@ -3510,6 +3540,9 @@ async function saveEditedListing() {
         showSuccess('Объявление успешно обновлено!');
         closeEditListingModal();
         
+        // Обновляем время последнего визита
+        updateLastSeen();
+        
         // Показываем обновленное объявление
         setTimeout(() => {
             showListingModal(editingListingId);
@@ -3563,6 +3596,9 @@ async function deleteListing(listingId) {
         showSuccess('Объявление удалено');
         document.getElementById('listing-modal').style.display = 'none';
         await loadListings();
+        
+        // Обновляем время последнего визита
+        updateLastSeen();
         
     } catch (error) {
         console.error('Ошибка удаления объявления:', error);

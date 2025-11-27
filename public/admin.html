@@ -270,12 +270,17 @@
 
         @media (max-width: 768px) {
             .users-table {
-                font-size: 0.75rem;
+                font-size: 0.7rem;
             }
 
             .users-table th,
             .users-table td {
-                padding: 12px 8px;
+                padding: 10px 6px;
+            }
+
+            .users-table th:nth-child(3),
+            .users-table td:nth-child(3) {
+                display: none;
             }
 
             .user-stats {
@@ -289,6 +294,14 @@
 
             .search-input {
                 width: 100%;
+            }
+
+            .stats-bar {
+                gap: 16px;
+            }
+
+            .stat-value {
+                font-size: 1.25rem;
             }
         }
     </style>
@@ -343,6 +356,7 @@
                     <tr>
                         <th>Пользователь</th>
                         <th>ID</th>
+                        <th>Объявления</th>
                         <th>Статистика</th>
                         <th>Рейтинг</th>
                         <th>Регистрация</th>
@@ -432,12 +446,31 @@
                     const reviewsCount = Array.isArray(user.reviews) ? user.reviews.length : 0;
                     const salesCount = typeof user.salesCount === 'number' ? user.salesCount : 0;
                     
+                    // Статистика объявлений
+                    const listingsStats = user.listingsStats || {};
+                    const totalListings = listingsStats.total || 0;
+                    const activeListings = listingsStats.active || 0;
+                    const deletedListings = listingsStats.deleted || 0;
+                    const soldListings = listingsStats.sold || 0;
+                    
                     const createdAt = user.createdAt 
-                        ? new Date(user.createdAt).toLocaleString('ru-RU')
+                        ? new Date(user.createdAt).toLocaleString('ru-RU', { 
+                            day: '2-digit', 
+                            month: '2-digit', 
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })
                         : '—';
                     
                     const lastSeenAt = user.lastSeenAt 
-                        ? new Date(user.lastSeenAt).toLocaleString('ru-RU')
+                        ? new Date(user.lastSeenAt).toLocaleString('ru-RU', { 
+                            day: '2-digit', 
+                            month: '2-digit', 
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })
                         : '—';
 
                     return `
@@ -455,6 +488,28 @@
                                 <div style="display: flex; flex-direction: column; gap: 4px;">
                                     <span class="user-id">${escapeHtml(publicId)}</span>
                                     <span style="font-size: 0.7rem; color: #9ca3af;">TG: ${escapeHtml(telegramId)}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.75rem;">
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <span style="color: #10b981; font-weight: 500;">✓</span>
+                                        <span>Активных: <strong>${activeListings}</strong></span>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <span style="color: #ef4444; font-weight: 500;">✗</span>
+                                        <span>Удалено: <strong>${deletedListings}</strong></span>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <span style="color: #6b7280; font-weight: 500;">📊</span>
+                                        <span>Всего: <strong>${totalListings}</strong></span>
+                                    </div>
+                                    ${soldListings > 0 ? `
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <span style="color: #3b82f6; font-weight: 500;">💰</span>
+                                        <span>Продано: <strong>${soldListings}</strong></span>
+                                    </div>
+                                    ` : ''}
                                 </div>
                             </td>
                             <td>
