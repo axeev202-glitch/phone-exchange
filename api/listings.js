@@ -1,5 +1,49 @@
+// Импорты для работы с файлами
+import fs from 'fs';
+import path from 'path';
+
 // Хранилище в памяти
 let listings = [];
+
+// Путь к файлу данных (для Vercel используем /tmp, для локальной разработки - корень проекта)
+
+const DATA_DIR = process.env.VERCEL ? '/tmp' : process.cwd();
+const LISTINGS_FILE = path.join(DATA_DIR, 'listings.json');
+
+// Функция загрузки объявлений из файла
+function loadListingsFromFile() {
+    try {
+        if (fs.existsSync(LISTINGS_FILE)) {
+            const data = fs.readFileSync(LISTINGS_FILE, 'utf8');
+            const loaded = JSON.parse(data);
+            listings = Array.isArray(loaded) ? loaded : [];
+            console.log(`✅ Загружено ${listings.length} объявлений из файла`);
+        } else {
+            listings = [];
+            console.log('📝 Файл объявлений не найден, создан новый массив');
+        }
+    } catch (error) {
+        console.error('❌ Ошибка загрузки объявлений из файла:', error);
+        listings = [];
+    }
+}
+
+// Функция сохранения объявлений в файл
+function saveListingsToFile() {
+    try {
+        // Убеждаемся, что директория существует
+        if (!fs.existsSync(DATA_DIR)) {
+            fs.mkdirSync(DATA_DIR, { recursive: true });
+        }
+        fs.writeFileSync(LISTINGS_FILE, JSON.stringify(listings, null, 2), 'utf8');
+        console.log(`💾 Сохранено ${listings.length} объявлений в файл`);
+    } catch (error) {
+        console.error('❌ Ошибка сохранения объявлений в файл:', error);
+    }
+}
+
+// Загружаем данные при инициализации модуля
+loadListingsFromFile();
 
 // Конфигурация вашего бота
 const TELEGRAM_BOT_TOKEN = '8364853114:AAGfVhFQjq14TnoGSaMOtW3nErpYrtYzvF0';
@@ -82,15 +126,51 @@ export default async function handler(req, res) {
         // GET запрос - получить все объявления
         if (req.method === 'GET') {
             const { userId, includeHidden } = req.query || {};
+            const now = new Date();
 
-            let filtered = listings.filter(l => !l.isDeleted);
+            // Фильтруем объявления: не удаленные, не проданные и не истекшие (30 дней)
+            let hasChanges = false;
+            let filtered = listings.filter(l => {
+                if (l.isDeleted) return false;
+                
+                // Не показываем проданные объявления в основной ленте
+                if (l.status === 'sold' || l.status === 'completed') return false;
+                
+                // Если есть expiresAt, проверяем, не истекло ли объявление
+                if (l.expiresAt) {
+                    const expiresDate = new Date(l.expiresAt);
+                    if (expiresDate < now) {
+                        // Автоматически помечаем как удаленное, если истекло
+                        l.isDeleted = true;
+                        hasChanges = true;
+                        return false;
+                    }
+                } else {
+                    // Для старых объявлений без expiresAt проверяем timestamp (30 дней)
+                    const listingDate = new Date(l.timestamp);
+                    const daysDiff = (now - listingDate) / (1000 * 60 * 60 * 24);
+                    if (daysDiff > 30) {
+                        // Автоматически помечаем как удаленное, если старше 30 дней
+                        l.isDeleted = true;
+                        hasChanges = true;
+                        return false;
+                    }
+                }
+                
+                return true;
+            });
+
+            // Сохраняем изменения, если были помечены объявления как удаленные
+            if (hasChanges) {
+                saveListingsToFile();
+            }
 
             if (!includeHidden) {
                 filtered = filtered.filter(l => !l.isHidden);
             }
 
             if (userId) {
-                filtered = listings.filter(
+                filtered = filtered.filter(
                     l =>
                         l.userId === userId &&
                         !l.isDeleted &&
@@ -151,6 +231,10 @@ export default async function handler(req, res) {
             }
 
             // Создаем новое объявление
+            const now = new Date();
+            const expiresAt = new Date(now);
+            expiresAt.setDate(expiresAt.getDate() + 30); // Объявление активно 30 дней
+            
             const newListing = {
                 id: Date.now().toString(),
                 phoneModel: body.phoneModel.trim(),
@@ -158,13 +242,17 @@ export default async function handler(req, res) {
                 description: body.description?.trim() || 'Нет описания',
                 desiredPhone: body.desiredPhone.trim(),
                 location: body.location || 'Москва',
-                timestamp: new Date().toISOString(),
+                price: body.price || null,
+                timestamp: now.toISOString(),
+                expiresAt: expiresAt.toISOString(), // Дата истечения (30 дней)
                 userId: body.userId || 'anonymous',
                 userInfo: body.userInfo || {},
                 image: body.image || (Array.isArray(body.images) && body.images.length > 0 ? body.images[0] : null),
                 images: Array.isArray(body.images) ? body.images : (body.image ? [body.image] : []),
                 isHidden: false,
                 isDeleted: false,
+                status: 'active', // active, sold, completed
+                soldAt: null, // Дата продажи/обмена
                 // Данные фильтров
                 priceSegment: body.priceSegment || null,
                 color: body.color || null,
@@ -177,6 +265,9 @@ export default async function handler(req, res) {
 
             // Добавляем в массив
             listings.unshift(newListing);
+            
+            // Сохраняем в файл
+            saveListingsToFile();
             
             console.log('New listing created:', newListing);
 
@@ -197,14 +288,14 @@ export default async function handler(req, res) {
             });
         }
 
-        // PATCH запрос - обновление объявления (например, скрыть/показать)
+        // PATCH запрос - обновление объявления
         if (req.method === 'PATCH') {
             let body = req.body;
             if (typeof body === 'string') {
                 body = JSON.parse(body || '{}');
             }
 
-            const { id, userId, isHidden } = body || {};
+            const { id, userId } = body || {};
             if (!id) {
                 return res.status(400).json({ error: 'id is required' });
             }
@@ -218,9 +309,36 @@ export default async function handler(req, res) {
                 return res.status(403).json({ error: 'Forbidden' });
             }
 
-            if (typeof isHidden === 'boolean') {
-                listing.isHidden = isHidden;
+            // Обновление полей объявления
+            if (body.phoneModel) listing.phoneModel = body.phoneModel.trim();
+            if (body.condition) listing.condition = body.condition;
+            if (body.description !== undefined) listing.description = body.description.trim() || 'Нет описания';
+            if (body.desiredPhone !== undefined) listing.desiredPhone = body.desiredPhone.trim();
+            if (body.location) listing.location = body.location.trim();
+            if (body.price !== undefined) listing.price = body.price;
+            if (body.image !== undefined) listing.image = body.image;
+            if (body.images !== undefined) listing.images = Array.isArray(body.images) ? body.images : [];
+            if (typeof body.isHidden === 'boolean') listing.isHidden = body.isHidden;
+            
+            // Обновление данных фильтров
+            if (body.priceSegment !== undefined) listing.priceSegment = body.priceSegment;
+            if (body.color !== undefined) listing.color = body.color;
+            if (body.firmware !== undefined) listing.firmware = body.firmware;
+            if (body.usage !== undefined) listing.usage = body.usage;
+            if (body.storage !== undefined) listing.storage = body.storage;
+            if (body.ram !== undefined) listing.ram = body.ram;
+            if (body.year !== undefined) listing.year = body.year;
+
+            // Обновление статуса объявления (sold, completed)
+            if (body.status && ['active', 'sold', 'completed'].includes(body.status)) {
+                listing.status = body.status;
+                if (body.status === 'sold' || body.status === 'completed') {
+                    listing.soldAt = new Date().toISOString();
+                }
             }
+
+            // Сохраняем в файл
+            saveListingsToFile();
 
             return res.status(200).json({ success: true, listing });
         }
@@ -247,6 +365,9 @@ export default async function handler(req, res) {
             }
 
             listing.isDeleted = true;
+
+            // Сохраняем в файл
+            saveListingsToFile();
 
             return res.status(200).json({ success: true });
         }

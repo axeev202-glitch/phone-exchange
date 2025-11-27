@@ -1,5 +1,48 @@
+// Импорты для работы с файлами
+import fs from 'fs';
+import path from 'path';
+
 // Простое хранилище профилей пользователей в памяти
 let users = [];
+
+// Путь к файлу данных (для Vercel используем /tmp, для локальной разработки - корень проекта)
+const DATA_DIR = process.env.VERCEL ? '/tmp' : process.cwd();
+const USERS_FILE = path.join(DATA_DIR, 'users.json');
+
+// Функция загрузки профилей из файла
+function loadUsersFromFile() {
+    try {
+        if (fs.existsSync(USERS_FILE)) {
+            const data = fs.readFileSync(USERS_FILE, 'utf8');
+            const loaded = JSON.parse(data);
+            users = Array.isArray(loaded) ? loaded : [];
+            console.log(`✅ Загружено ${users.length} профилей из файла`);
+        } else {
+            users = [];
+            console.log('📝 Файл профилей не найден, создан новый массив');
+        }
+    } catch (error) {
+        console.error('❌ Ошибка загрузки профилей из файла:', error);
+        users = [];
+    }
+}
+
+// Функция сохранения профилей в файл
+function saveUsersToFile() {
+    try {
+        // Убеждаемся, что директория существует
+        if (!fs.existsSync(DATA_DIR)) {
+            fs.mkdirSync(DATA_DIR, { recursive: true });
+        }
+        fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), 'utf8');
+        console.log(`💾 Сохранено ${users.length} профилей в файл`);
+    } catch (error) {
+        console.error('❌ Ошибка сохранения профилей в файл:', error);
+    }
+}
+
+// Загружаем данные при инициализации модуля
+loadUsersFromFile();
 
 function generatePublicId() {
     const alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
@@ -68,6 +111,7 @@ export default async function handler(req, res) {
                         avatar: avatar || null,
                         rating: 0,
                         reviews: [],
+                        salesCount: 0, // Счетчик продаж/обменов
                         createdAt: new Date().toISOString(),
                         lastSeenAt: new Date().toISOString(),
                         publicId: generatePublicId()
@@ -78,7 +122,14 @@ export default async function handler(req, res) {
                     profile.name = name || profile.name;
                     profile.avatar = avatar || profile.avatar;
                     profile.lastSeenAt = new Date().toISOString();
+                    // Инициализируем salesCount если его нет
+                    if (typeof profile.salesCount !== 'number') {
+                        profile.salesCount = 0;
+                    }
                 }
+
+                // Сохраняем в файл
+                saveUsersToFile();
 
                 return res.status(200).json(profile);
             }
@@ -100,6 +151,9 @@ export default async function handler(req, res) {
                     profile.avatar = avatar;
                 }
                 profile.lastSeenAt = new Date().toISOString();
+
+                // Сохраняем в файл
+                saveUsersToFile();
 
                 return res.status(200).json(profile);
             }
@@ -148,6 +202,9 @@ export default async function handler(req, res) {
                     const sum = profile.reviews.reduce((acc, r) => acc + (r.rating || 0), 0);
                     profile.rating = Math.round((sum / profile.reviews.length) * 10) / 10;
                 }
+
+                // Сохраняем в файл
+                saveUsersToFile();
 
                 return res.status(200).json(profile);
             }
