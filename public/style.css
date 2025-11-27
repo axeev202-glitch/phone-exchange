@@ -943,6 +943,13 @@ body {
     padding-top: 12px;
     border-top: 1px solid #f3f4f6;
     margin-bottom: 0;
+    gap: 8px;
+}
+
+.listing-prices > div {
+    display: flex;
+    gap: 8px;
+    align-items: center;
 }
 
 .listing-price-current {
@@ -959,6 +966,34 @@ body {
     text-decoration: line-through;
 }
 
+.listing-profile-btn {
+    padding: 8px;
+    background: #f3f4f6;
+    color: #6b7280;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: none;
+    min-width: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.listing-profile-btn:hover {
+    background: #e5e7eb;
+    color: #111827;
+}
+
+.listing-profile-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
 .listing-buy-btn {
     padding: 8px 20px;
     background: #111827;
@@ -971,6 +1006,7 @@ body {
     transition: all 0.2s ease;
     box-shadow: none;
     min-width: auto;
+    flex: 1;
 }
 
 .listing-buy-btn:hover {
@@ -1323,6 +1359,9 @@ body {
 .user-profile-username {
     font-size: 0.875rem;
     color: #6b7280;
+    text-align: center;
+    margin-top: 4px;
+    margin-bottom: 8px;
     text-align: center;
     margin: -8px 0 4px 0;
 }

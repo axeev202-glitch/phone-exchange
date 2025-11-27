@@ -281,8 +281,18 @@ async function initUserProfile() {
         console.log('Profile initialized successfully:', {
             telegramId: currentProfile.telegramId,
             publicId: currentProfile.publicId,
-            name: currentProfile.name
+            name: currentProfile.name,
+            username: currentProfile.username,
+            avatar: currentProfile.avatar
         });
+        
+        // Обновляем currentUser с данными из профиля
+        if (currentProfile.username && !currentUser.username) {
+            currentUser.username = currentProfile.username;
+        }
+        if (currentProfile.avatar && !currentUser.photoUrl) {
+            currentUser.photoUrl = currentProfile.avatar;
+        }
         
         // Показываем уведомление о регистрации (только при первом входе)
         if (currentProfile.createdAt && 
@@ -298,19 +308,54 @@ async function initUserProfile() {
 function updateProfile() {
     if (!currentUser) return;
 
-        const userNameElement = document.getElementById('user-name');
-        const userUsernameElement = document.getElementById('user-username');
+    // Обновляем элементы во вкладке профиля
+    const profileNameElement = document.getElementById('profile-name');
+    const profileUsernameElement = document.getElementById('profile-username');
+    const profileAboutElement = document.getElementById('profile-about');
+    const profilePublicIdElement = document.getElementById('profile-public-id');
+    const profileAvatarElement = document.getElementById('profile-avatar');
+    
+    if (profileNameElement) {
+        profileNameElement.textContent = currentProfile?.name || currentUser.name || 'Пользователь Telegram';
+    }
+    
+    if (profileUsernameElement) {
+        const username = currentProfile?.username || currentUser.username;
+        profileUsernameElement.textContent = username ? `@${username}` : '';
+        profileUsernameElement.style.display = username ? 'block' : 'none';
+    }
+    
+    if (profileAboutElement) {
+        const about = currentProfile?.about?.trim();
+        profileAboutElement.textContent = about && about.length > 0
+            ? about
+            : 'Добавьте короткое описание о себе — это увидят другие пользователи.';
+    }
+    
+    if (profilePublicIdElement) {
+        profilePublicIdElement.textContent = currentProfile?.publicId || '—';
+    }
+    
+    if (profileAvatarElement) {
+        const avatarSrc = currentProfile?.avatar || currentUser.photoUrl || null;
+        setAvatar(profileAvatarElement, avatarSrc);
+    }
+    
+    // Обновляем старые элементы (для совместимости)
+    const userNameElement = document.getElementById('user-name');
+    const userUsernameElement = document.getElementById('user-username');
     const userAboutElement = document.getElementById('user-about');
     const userPublicIdElement = document.getElementById('user-public-id');
     const ratingLargeElement = document.querySelector('.rating-large');
     const avatarElement = document.querySelector('.profile-card .avatar');
         
-        if (userNameElement) {
-            userNameElement.textContent = currentUser.name;
-        }
-        if (userUsernameElement) {
-            userUsernameElement.textContent = currentUser.username ? `@${currentUser.username}` : '';
-        }
+    if (userNameElement) {
+        userNameElement.textContent = currentProfile?.name || currentUser.name || 'Пользователь Telegram';
+    }
+    if (userUsernameElement) {
+        const username = currentProfile?.username || currentUser.username;
+        userUsernameElement.textContent = username ? `@${username}` : '';
+    }
     if (userAboutElement) {
         const about = currentProfile?.about?.trim();
         userAboutElement.textContent = about && about.length > 0
@@ -1206,7 +1251,15 @@ function showListings() {
                         </div>
                 <div class="listing-prices">
                     <div class="listing-price-current">${item.price ? formatPriceNumber(item.price) : (item.priceSegment ? formatPrice(item.priceSegment) : 'Цена не указана')}</div>
-                    <button class="listing-buy-btn" onclick="event.stopPropagation(); showListingModal('${item.id}')">Купить</button>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="listing-profile-btn" onclick="event.stopPropagation(); openSellerProfileFromListing('${item.userId}')" title="Профиль продавца">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                        </button>
+                        <button class="listing-buy-btn" onclick="event.stopPropagation(); showListingModal('${item.id}')">Купить</button>
+                    </div>
                     </div>
                 </div>
             </div>
@@ -1361,6 +1414,19 @@ function showTab(tabName) {
     }
 }
 
+function renderUserProfile() {
+    if (!currentUser || !currentProfile) {
+        console.warn('Cannot render profile: currentUser or currentProfile is not set');
+        return;
+    }
+    
+    // Обновляем профиль через updateProfile
+    updateProfile();
+    
+    // Обновляем статистику
+    updateProfileStats();
+}
+
 // Показ избранных объявлений
 function showFavorites() {
     const container = document.querySelector('#favorites .listings-container');
@@ -1425,7 +1491,15 @@ function showFavorites() {
                 </div>
                 <div class="listing-prices">
                     <div class="listing-price-current">${item.price ? formatPriceNumber(item.price) : (item.priceSegment ? formatPrice(item.priceSegment) : 'Цена не указана')}</div>
-                    <button class="listing-buy-btn" onclick="event.stopPropagation(); showListingModal('${item.id}')">Купить</button>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="listing-profile-btn" onclick="event.stopPropagation(); openSellerProfileFromListing('${item.userId}')" title="Профиль продавца">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                        </button>
+                        <button class="listing-buy-btn" onclick="event.stopPropagation(); showListingModal('${item.id}')">Купить</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2197,6 +2271,20 @@ function openSellerProfileFromModal() {
         openMyProfile();
     } else {
         openUserProfileByTelegram(currentExchangeTargetId);
+    }
+}
+
+function openSellerProfileFromListing(userId) {
+    if (!userId) {
+        showError('Не удалось определить продавца для профиля.');
+        return;
+    }
+    
+    // Если это свой профиль, открываем свой профиль
+    if (userId === currentUser?.id) {
+        openMyProfile();
+    } else {
+        openUserProfileByTelegram(userId);
     }
 }
 
