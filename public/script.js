@@ -222,7 +222,7 @@ async function initApp() {
     // Инициализируем профиль пользователя на сервере
     try {
         await initUserProfile();
-        updateProfile();
+    updateProfile();
         await loadListings();
     } catch (error) {
         console.error('Ошибка инициализации профиля:', error);
@@ -298,19 +298,19 @@ async function initUserProfile() {
 function updateProfile() {
     if (!currentUser) return;
 
-    const userNameElement = document.getElementById('user-name');
-    const userUsernameElement = document.getElementById('user-username');
+        const userNameElement = document.getElementById('user-name');
+        const userUsernameElement = document.getElementById('user-username');
     const userAboutElement = document.getElementById('user-about');
     const userPublicIdElement = document.getElementById('user-public-id');
     const ratingLargeElement = document.querySelector('.rating-large');
     const avatarElement = document.querySelector('.profile-card .avatar');
-
-    if (userNameElement) {
-        userNameElement.textContent = currentUser.name;
-    }
-    if (userUsernameElement) {
-        userUsernameElement.textContent = currentUser.username ? `@${currentUser.username}` : '';
-    }
+        
+        if (userNameElement) {
+            userNameElement.textContent = currentUser.name;
+        }
+        if (userUsernameElement) {
+            userUsernameElement.textContent = currentUser.username ? `@${currentUser.username}` : '';
+        }
     if (userAboutElement) {
         const about = currentProfile?.about?.trim();
         userAboutElement.textContent = about && about.length > 0
@@ -784,7 +784,7 @@ async function createListing() {
         showError('Заполните обязательные поля: модель, состояние и город!');
         return;
     }
-    
+
     // Если выбран обмен, проверяем что указано на что менять
     if (exchangeType === 'yes' && !desiredPhone) {
         showError('Укажите, на что хотите поменять!');
@@ -1175,19 +1175,19 @@ function showListings() {
                 </svg>
             </button>
             <div class="listing-image-large ${getPhoneBrand(item.phoneModel)}">
-                ${
-                    item.image
-                        ? `<img src="${item.image}" alt="Фото ${item.phoneModel}" class="listing-photo">`
+                    ${
+                        item.image
+                            ? `<img src="${item.image}" alt="Фото ${item.phoneModel}" class="listing-photo">`
                         : `<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #9ca3af; position: absolute; top: 0; left: 0; right: 0; bottom: 0;">
                             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.3;">
                                 <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
                                 <line x1="12" y1="18" x2="12.01" y2="18"/>
                             </svg>
                         </div>`
-                }
-            </div>
-            <div class="listing-details">
-                <div class="listing-title">${item.phoneModel}</div>
+                    }
+                </div>
+                <div class="listing-details">
+                    <div class="listing-title">${item.phoneModel}</div>
                 <div class="listing-condition">${getConditionText(item.condition)}</div>
                 <div class="listing-rating-location">
                     <span class="rating">
@@ -1203,13 +1203,13 @@ function showListings() {
                         </svg>
                         <span style="margin-left: 4px;">${item.location}</span>
                     </span>
-                </div>
+                        </div>
                 <div class="listing-prices">
                     <div class="listing-price-current">${item.price ? formatPriceNumber(item.price) : (item.priceSegment ? formatPrice(item.priceSegment) : 'Цена не указана')}</div>
                     <button class="listing-buy-btn" onclick="event.stopPropagation(); showListingModal('${item.id}')">Купить</button>
+                    </div>
                 </div>
             </div>
-        </div>
     `;
     }).join('');
     
@@ -1289,6 +1289,15 @@ function formatTime(timestamp) {
     if (diff < 60000) return 'только что';
     if (diff < 3600000) return `${Math.floor(diff / 60000)} мин назад`;
     if (diff < 86400000) return `${Math.floor(diff / 3600000)} ч назад`;
+    
+    const days = Math.floor(diff / 86400000);
+    if (days === 1) return '1 день назад';
+    if (days < 7) return `${days} ${days < 5 ? 'дня' : 'дней'} назад`;
+    
+    const weeks = Math.floor(days / 7);
+    if (weeks === 1) return '1 неделю назад';
+    if (weeks < 4) return `${weeks} ${weeks < 5 ? 'недели' : 'недель'} назад`;
+    
     return date.toLocaleDateString('ru-RU');
 }
 
@@ -1843,7 +1852,7 @@ function showListingModal(listingId) {
                         <polyline points="12 6 12 12 16 14"/>
                     </svg>
                     <span>Опубликовано ${formatTime(listing.timestamp)}</span>
-                </div>
+        </div>
             </div>
             <button class="listing-detail-close" onclick="document.getElementById('listing-modal').style.display='none'">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1851,7 +1860,7 @@ function showListingModal(listingId) {
                     <line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
             </button>
-        </div>
+                </div>
         <div class="listing-detail-scrollable">
             <div class="listing-detail-body">
                 <!-- Image Gallery Section -->
@@ -1861,9 +1870,9 @@ function showListingModal(listingId) {
                         ${hasMultipleImages ? `
                         <div class="listing-detail-image-counter">
                             ${currentListingImageIndex + 1} / ${images.length}
-                        </div>
+                </div>
                         ` : ''}
-                    </div>
+                </div>
                     ${hasMultipleImages ? `
                     <div class="listing-detail-thumbnails">
                         ${images.map((img, idx) => `
@@ -2149,8 +2158,13 @@ function startExchange(listingId) {
     document.getElementById('exchange-modal').style.display = 'block';
 }
 
-function contactSeller(listingId) {
-    showError('Функция связи с продавцом скоро будет доступна!');
+function contactSeller(telegramId) {
+    if (!telegramId) {
+        showError('Не удалось определить продавца для связи.');
+        return;
+    }
+    // Здесь можно добавить логику открытия чата с продавцом
+    showInfo('Функция связи с продавцом скоро будет доступна!');
 }
 
 function confirmExchange() {
@@ -2371,12 +2385,13 @@ function renderUserProfileModal(profile, listings) {
     const nameEl = document.getElementById('user-profile-name');
     const avatarEl = document.getElementById('user-profile-avatar');
     const aboutEl = document.getElementById('user-profile-about');
-    const editAvatarBtn = document.getElementById('user-profile-edit-avatar');
-    const contactInfo = document.getElementById('user-profile-contact-info');
+    const locationEl = document.getElementById('user-profile-location');
+    const joinedEl = document.getElementById('user-profile-joined');
     const phoneEl = document.getElementById('user-profile-phone');
     const emailEl = document.getElementById('user-profile-email');
 
     if (nameEl) nameEl.textContent = profile.name || 'Пользователь Telegram';
+    
     if (avatarEl) {
         if (profile.avatar) {
             const img = document.createElement('img');
@@ -2412,23 +2427,36 @@ function renderUserProfileModal(profile, listings) {
         avatarEl.classList.add('user-profile-avatar-large');
     }
 
+    if (locationEl) {
+        const location = profile.location || 'Не указано';
+        const locationSpan = locationEl.querySelector('span');
+        if (locationSpan) {
+            locationSpan.textContent = location;
+        } else {
+            locationEl.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg><span>${location}</span>`;
+        }
+    }
+
+    if (joinedEl) {
+        const createdAt = profile.createdAt ? new Date(profile.createdAt) : new Date();
+        const yearsOnSite = Math.floor((new Date() - createdAt) / (1000 * 60 * 60 * 24 * 365));
+        const joinedText = yearsOnSite > 0 
+            ? `На сайте ${yearsOnSite} ${yearsOnSite === 1 ? 'год' : yearsOnSite < 5 ? 'года' : 'лет'}`
+            : 'На сайте недавно';
+        const joinedSpan = joinedEl.querySelector('span');
+        if (joinedSpan) {
+            joinedSpan.textContent = joinedText;
+        } else {
+            joinedEl.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span>${joinedText}</span>`;
+        }
+    }
+
     if (aboutEl) {
         const about = profile.about?.trim();
         aboutEl.textContent =
             about && about.length > 0
                 ? about
-                : 'Добавьте короткое описание о себе — это увидят другие пользователи.';
-    }
-
-    // Кнопки действий
-    if (isOwnProfile) {
-        if (editAvatarBtn) editAvatarBtn.style.display = 'flex';
-        if (contactInfo) contactInfo.style.display = 'block';
-        if (phoneEl) phoneEl.textContent = profile.phone || '—';
-        if (emailEl) emailEl.textContent = profile.email || '—';
-    } else {
-        if (editAvatarBtn) editAvatarBtn.style.display = 'none';
-        if (contactInfo) contactInfo.style.display = 'none';
+                : 'Пользователь пока не рассказал о себе.';
     }
 
     // Подсчитываем статистику
@@ -2446,25 +2474,127 @@ function renderUserProfileModal(profile, listings) {
     const activeCountEl = document.getElementById('user-profile-active-count');
     const salesCountEl = document.getElementById('user-profile-sales-count');
     const reviewsCountEl = document.getElementById('user-profile-reviews-count');
-    const activeCountSimpleEl = document.getElementById('user-profile-active-count-simple');
-    const salesCountSimpleEl = document.getElementById('user-profile-sales-count-simple');
 
-    const ratingDisplayEl = document.getElementById('user-profile-rating-display-number');
     if (ratingEl) ratingEl.textContent = ratingValue.toFixed(1);
-    if (ratingDisplayEl) ratingDisplayEl.textContent = ratingValue.toFixed(1);
     if (activeCountEl) activeCountEl.textContent = activeListings.length.toString();
     if (salesCountEl) salesCountEl.textContent = soldListings.length.toString();
     if (reviewsCountEl) reviewsCountEl.textContent = reviews.length.toString();
-    if (activeCountSimpleEl) activeCountSimpleEl.textContent = activeListings.length.toString();
-    if (salesCountSimpleEl) salesCountSimpleEl.textContent = soldListings.length.toString();
-    
-    const publicIdEl = document.getElementById('user-profile-public-id');
-    if (publicIdEl && profile.publicId) {
-        publicIdEl.textContent = profile.publicId;
+
+    // Обновляем контактную информацию
+    if (phoneEl) phoneEl.textContent = profile.phone || '—';
+    if (emailEl) emailEl.textContent = profile.email || '—';
+
+    // Отображаем товары продавца
+    const sellerItemsEl = document.getElementById('user-profile-seller-items');
+    if (sellerItemsEl) {
+        const displayItems = activeListings.slice(0, 4); // Показываем первые 4 товара
+        if (displayItems.length === 0) {
+            sellerItemsEl.innerHTML = '<p style="text-align: center; color: #6b7280; padding: 20px;">Нет активных товаров</p>';
+        } else {
+            sellerItemsEl.innerHTML = displayItems.map(item => `
+                <div class="user-profile-seller-item-card" onclick="showListingModal('${item.id}')">
+                    <div class="user-profile-seller-item-image">
+                        ${item.image 
+                            ? `<img src="${item.image}" alt="${item.phoneModel}">`
+                            : `<div style="display: flex; align-items: center; justify-content: center; height: 100%; background: #f3f4f6; color: #9ca3af;">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+                                    <line x1="12" y1="18" x2="12.01" y2="18"/>
+                                </svg>
+                            </div>`
+                        }
+                    </div>
+                    <div class="user-profile-seller-item-info">
+                        <div class="user-profile-seller-item-price">${item.price ? formatPriceNumber(item.price) : (item.priceSegment ? formatPrice(item.priceSegment) : 'Цена не указана')}</div>
+                        <div class="user-profile-seller-item-name">${item.phoneModel}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
     }
 
+    // Отображаем отзывы
+    const reviewsListEl = document.getElementById('user-profile-reviews-list');
+    if (reviewsListEl) {
+        const displayReviews = reviews.slice(0, 3); // Показываем первые 3 отзыва
+        if (displayReviews.length === 0) {
+            reviewsListEl.innerHTML = '<p style="text-align: center; color: #6b7280; padding: 20px;">Отзывов пока нет</p>';
+        } else {
+            reviewsListEl.innerHTML = displayReviews.map(r => {
+                const authorInitial = (r.authorUsername || r.authorName || 'П').charAt(0).toUpperCase();
+                return `
+                    <div class="user-profile-review-card">
+                        <div class="user-profile-review-header">
+                            <div class="user-profile-review-avatar" style="background: #dbeafe; color: #1e40af;">${authorInitial}</div>
+                            <div class="user-profile-review-info">
+                                <div class="user-profile-review-name">${r.authorUsername || r.authorName || 'Пользователь'}</div>
+                                <div class="user-profile-review-rating">
+                                    ${[...Array(5)].map((_, i) => `
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="${i < (r.rating || 5) ? '#fbbf24' : 'none'}" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                                        </svg>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            <div class="user-profile-review-date">${formatTime(r.createdAt)}</div>
+                        </div>
+                        <p class="user-profile-review-text">${r.text || 'Без текста'}</p>
+                    </div>
+                `;
+            }).join('');
+        }
+    }
 
     modal.style.display = 'block';
+}
+
+function contactSellerFromProfile() {
+    if (!currentExchangeTargetId) {
+        showError('Не удалось определить продавца для связи.');
+        return;
+    }
+    contactSeller(currentExchangeTargetId);
+}
+
+function callSeller() {
+    if (!currentExchangeTargetId) {
+        showError('Не удалось определить продавца для звонка.');
+        return;
+    }
+    const profile = currentProfile || {};
+    const phone = profile.phone;
+    if (phone) {
+        window.location.href = `tel:${phone}`;
+    } else {
+        showError('Номер телефона не указан.');
+    }
+}
+
+function shareSellerProfile() {
+    if (!currentExchangeTargetId) {
+        showError('Не удалось определить профиль для публикации.');
+        return;
+    }
+    // Здесь можно добавить логику публикации профиля
+    showInfo('Функция публикации профиля в разработке');
+}
+
+function toggleSellerBookmark() {
+    // Здесь можно добавить логику добавления в закладки
+    showInfo('Функция закладок в разработке');
+}
+
+function viewAllSellerItems() {
+    // Закрываем модальное окно профиля
+    document.getElementById('user-profile-modal').style.display = 'none';
+    // Переходим на вкладку поиска и фильтруем по продавцу
+    showTab('search');
+    // Здесь можно добавить фильтрацию по продавцу
+}
+
+function viewAllSellerReviews() {
+    // Здесь можно добавить модальное окно со всеми отзывами
+    showInfo('Все отзывы продавца');
 }
 
 function shareProfile() {
