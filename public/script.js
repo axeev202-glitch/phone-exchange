@@ -2277,14 +2277,23 @@ async function openUserProfileByTelegram(telegramId) {
     
     console.log('Opening profile by telegramId:', telegramId);
     
+    // Показываем модалку сразу с базовой информацией
+    const modal = document.getElementById('user-profile-modal');
+    if (modal) {
+        modal.style.display = 'block';
+        // Показываем загрузку
+        const nameEl = document.getElementById('user-profile-name');
+        if (nameEl) nameEl.textContent = 'Загрузка...';
+    }
+    
     try {
-        // Сначала пытаемся загрузить объявления, чтобы получить информацию о пользователе
-        const listingsResp = await fetch(`${API_URL}?userId=${encodeURIComponent(telegramId)}`);
+        // Загружаем профиль и объявления параллельно для ускорения
+        const [profileResp, listingsResp] = await Promise.all([
+            fetch(`${USERS_API_URL}?telegramId=${encodeURIComponent(telegramId)}`),
+            fetch(`${API_URL}?userId=${encodeURIComponent(telegramId)}`)
+        ]);
+        
         const listings = listingsResp.ok ? await listingsResp.json() : [];
-        
-        // Пытаемся загрузить профиль
-        let profileResp = await fetch(`${USERS_API_URL}?telegramId=${encodeURIComponent(telegramId)}`);
-        
         let profile;
         
         // Если профиль не найден, создаем его автоматически
@@ -2324,9 +2333,13 @@ async function openUserProfileByTelegram(telegramId) {
         }
         
         console.log('Listings loaded:', listings.length);
-        renderUserProfileModal(profile, listings);
+        // Используем requestAnimationFrame для плавного рендеринга
+        requestAnimationFrame(() => {
+            renderUserProfileModal(profile, listings);
+        });
     } catch (error) {
         console.error('Ошибка открытия профиля пользователя:', error);
+        if (modal) modal.style.display = 'none';
         showError(`Не удалось открыть профиль пользователя: ${error.message}`);
     }
 }
@@ -2339,6 +2352,15 @@ async function openUserProfileByPublicId(publicId) {
     
     console.log('Opening profile by publicId:', publicId);
     
+    // Показываем модалку сразу с базовой информацией
+    const modal = document.getElementById('user-profile-modal');
+    if (modal) {
+        modal.style.display = 'block';
+        // Показываем загрузку
+        const nameEl = document.getElementById('user-profile-name');
+        if (nameEl) nameEl.textContent = 'Загрузка...';
+    }
+    
     try {
         const profileResp = await fetch(
             `${USERS_API_URL}?publicId=${encodeURIComponent(publicId)}`
@@ -2346,6 +2368,7 @@ async function openUserProfileByPublicId(publicId) {
 
         if (!profileResp.ok) {
             if (profileResp.status === 404) {
+                if (modal) modal.style.display = 'none';
                 showError('Профиль не найден. Проверьте правильность ссылки.');
                 return;
             }
@@ -2356,19 +2379,25 @@ async function openUserProfileByPublicId(publicId) {
         console.log('Profile loaded by publicId:', profile);
         
         if (!profile.telegramId) {
+            if (modal) modal.style.display = 'none';
             showError('Профиль найден, но не содержит данных пользователя.');
             return;
         }
         
+        // Загружаем объявления параллельно
         const listingsResp = await fetch(
             `${API_URL}?userId=${encodeURIComponent(profile.telegramId)}`
         );
         const listings = listingsResp.ok ? await listingsResp.json() : [];
         console.log('Listings loaded:', listings.length);
 
-        renderUserProfileModal(profile, listings);
+        // Используем requestAnimationFrame для плавного рендеринга
+        requestAnimationFrame(() => {
+            renderUserProfileModal(profile, listings);
+        });
     } catch (error) {
         console.error('Ошибка открытия профиля по ID:', error);
+        if (modal) modal.style.display = 'none';
         showError(`Профиль по ссылке не найден: ${error.message}`);
     }
 }

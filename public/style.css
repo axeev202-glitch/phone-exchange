@@ -1129,13 +1129,13 @@ body {
 /* Gradient Header */
 .user-profile-gradient-header {
     position: relative;
-    height: 120px;
-    background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+    height: 80px;
+    background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
     border-radius: 20px 20px 0 0;
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    padding: 16px;
+    padding: 12px 16px;
 }
 
 .user-profile-header-btn {
@@ -1195,7 +1195,7 @@ body {
     align-items: center;
     gap: 0;
     overflow-y: auto;
-    max-height: calc(90vh - 120px);
+    max-height: calc(90vh - 80px);
 }
 
 .profile-content-wrapper {
@@ -1218,7 +1218,7 @@ body {
     position: relative;
     display: flex;
     justify-content: center;
-    margin-top: -60px;
+    margin-top: -40px;
     margin-bottom: 20px;
     z-index: 1;
 }
@@ -4189,8 +4189,8 @@ body {
     }
     
     .user-profile-gradient-header {
-        height: 100px;
-        padding: 12px;
+        height: 70px;
+        padding: 10px 12px;
         border-radius: 0;
     }
     
@@ -4205,7 +4205,7 @@ body {
     }
     
     .user-profile-avatar-wrapper {
-        margin-top: -50px;
+        margin-top: -35px;
         margin-bottom: 16px;
     }
     
