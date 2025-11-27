@@ -1616,10 +1616,22 @@ body {
 /* Colored Stats Grid */
 .user-profile-stats-grid-colored {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 12px;
     width: 100%;
     margin: 16px 0;
+}
+
+@media (min-width: 481px) {
+    .user-profile-stats-grid-colored {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (min-width: 481px) {
+    .user-profile-stats-grid-colored {
+        grid-template-columns: repeat(4, 1fr);
+    }
 }
 
 .user-stat-card-colored {
@@ -4166,6 +4178,205 @@ body {
    АДАПТИВНОСТЬ ДЛЯ ВСЕХ ПЛАТФОРМ
    ============================================ */
 
+/* Адаптив для профиля продавца */
+@media (max-width: 480px) {
+    .user-profile-modal-content {
+        width: 100%;
+        max-width: 100%;
+        max-height: 100vh;
+        border-radius: 0;
+        margin: 0;
+    }
+    
+    .user-profile-gradient-header {
+        height: 100px;
+        padding: 12px;
+        border-radius: 0;
+    }
+    
+    .user-profile-header-btn {
+        width: 36px;
+        height: 36px;
+    }
+    
+    .user-profile-header-btn svg {
+        width: 18px;
+        height: 18px;
+    }
+    
+    .user-profile-avatar-wrapper {
+        margin-top: -50px;
+        margin-bottom: 16px;
+    }
+    
+    .user-profile-avatar-container {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .user-profile-info {
+        padding: 0 16px 16px;
+    }
+    
+    .user-profile-name {
+        font-size: 1.25rem;
+    }
+    
+    .user-profile-meta {
+        flex-direction: column;
+        gap: 6px;
+        font-size: 0.8rem;
+    }
+    
+    .user-profile-about {
+        font-size: 0.8rem;
+        padding: 0 8px;
+    }
+    
+    .user-profile-action-buttons-row {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .user-profile-action-btn-primary,
+    .user-profile-action-btn-secondary {
+        width: 100%;
+        padding: 14px 20px;
+        font-size: 0.875rem;
+    }
+    
+    .user-profile-stats-grid-colored {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+    }
+    
+    .user-stat-card-colored {
+        padding: 12px;
+    }
+    
+    .user-stat-icon-colored {
+        width: 24px;
+        height: 24px;
+    }
+    
+    .user-stat-icon-colored svg {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .user-stat-number-colored {
+        font-size: 1.25rem;
+    }
+    
+    .user-stat-label-colored {
+        font-size: 0.7rem;
+    }
+    
+    .user-profile-seller-items-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .user-profile-section-header-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .user-profile-section-title {
+        font-size: 1rem;
+    }
+    
+    .user-profile-view-all-btn {
+        font-size: 0.8rem;
+    }
+    
+    .user-profile-review-card {
+        padding: 12px;
+    }
+    
+    .user-profile-review-header {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .user-profile-review-avatar {
+        width: 32px;
+        height: 32px;
+        font-size: 0.75rem;
+    }
+    
+    .user-profile-review-name {
+        font-size: 0.8rem;
+    }
+    
+    .user-profile-review-rating svg {
+        width: 14px;
+        height: 14px;
+    }
+    
+    .user-profile-review-text {
+        font-size: 0.8rem;
+    }
+    
+    .user-profile-contact-info {
+        padding-top: 16px;
+        margin-top: 16px;
+    }
+    
+    .user-profile-contact-info h3 {
+        font-size: 1rem;
+        margin-bottom: 12px;
+    }
+    
+    .user-profile-contact-item-row {
+        font-size: 0.8rem;
+    }
+    
+    .user-profile-contact-item-row svg {
+        width: 18px;
+        height: 18px;
+    }
+}
+
+@media (min-width: 481px) and (max-width: 768px) {
+    .user-profile-modal-content {
+        width: 95%;
+        max-width: 550px;
+    }
+    
+    .user-profile-stats-grid-colored {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+    }
+    
+    .user-stat-card-colored {
+        padding: 14px;
+    }
+    
+    .user-profile-seller-items-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 769px) {
+    .user-profile-modal-content {
+        max-width: 700px;
+    }
+    
+    .user-profile-stats-grid-colored {
+        gap: 16px;
+    }
+    
+    .user-stat-card-colored {
+        padding: 20px;
+    }
+    
+    .user-profile-seller-items-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
 /* Очень маленькие экраны (до 320px) - старые телефоны */
 @media (max-width: 320px) {
     .container {
@@ -4310,6 +4521,20 @@ body {
     .modal-content {
         width: 94%;
         margin: 7% auto;
+    }
+    
+    .user-profile-modal-content {
+        width: 100%;
+        max-width: 100%;
+        border-radius: 0;
+    }
+    
+    .user-profile-info {
+        padding: 0 12px 12px;
+    }
+    
+    .user-profile-stats-grid-colored {
+        gap: 8px;
     }
 }
 
