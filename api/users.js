@@ -118,9 +118,10 @@ export default async function handler(req, res) {
                     };
                     users.push(profile);
                 } else {
-                    profile.username = username || profile.username;
-                    profile.name = name || profile.name;
-                    profile.avatar = avatar || profile.avatar;
+                    // Обновляем данные профиля, если они изменились
+                    if (username) profile.username = username;
+                    if (name) profile.name = name;
+                    if (avatar) profile.avatar = avatar;
                     profile.lastSeenAt = new Date().toISOString();
                     // Инициализируем salesCount если его нет
                     if (typeof profile.salesCount !== 'number') {
