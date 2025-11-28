@@ -139,6 +139,22 @@ export default async function handler(req, res) {
 
                 // Сохраняем в файл
                 saveUsersToFile();
+                
+                // Дополнительная проверка сохранения
+                console.log(`📊 Всего пользователей после сохранения: ${users.length}`);
+                console.log(`📁 Путь к файлу: ${USERS_FILE}`);
+                console.log(`📁 Файл существует: ${fs.existsSync(USERS_FILE)}`);
+                
+                // Проверяем, что данные действительно сохранились
+                if (fs.existsSync(USERS_FILE)) {
+                    try {
+                        const savedData = fs.readFileSync(USERS_FILE, 'utf8');
+                        const savedUsers = JSON.parse(savedData);
+                        console.log(`✅ Проверка: в файле сохранено ${savedUsers.length} пользователей`);
+                    } catch (checkError) {
+                        console.error('❌ Ошибка проверки сохраненных данных:', checkError);
+                    }
+                }
 
                 return res.status(200).json(profile);
             }
