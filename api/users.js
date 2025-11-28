@@ -32,12 +32,29 @@ function saveUsersToFile() {
     try {
         // Убеждаемся, что директория существует
         if (!fs.existsSync(DATA_DIR)) {
+            console.log(`📁 Создание директории: ${DATA_DIR}`);
             fs.mkdirSync(DATA_DIR, { recursive: true });
         }
-        fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), 'utf8');
-        console.log(`💾 Сохранено ${users.length} профилей в файл`);
+        const filePath = USERS_FILE;
+        const dataToSave = JSON.stringify(users, null, 2);
+        fs.writeFileSync(filePath, dataToSave, 'utf8');
+        console.log(`💾 Сохранено ${users.length} профилей в файл: ${filePath}`);
+        
+        // Проверяем, что файл действительно создан
+        if (fs.existsSync(filePath)) {
+            const fileSize = fs.statSync(filePath).size;
+            console.log(`✅ Файл создан, размер: ${fileSize} байт`);
+        } else {
+            console.error(`❌ Файл не был создан: ${filePath}`);
+        }
     } catch (error) {
         console.error('❌ Ошибка сохранения профилей в файл:', error);
+        console.error('Ошибка детали:', {
+            message: error.message,
+            code: error.code,
+            path: USERS_FILE,
+            dataDir: DATA_DIR
+        });
     }
 }
 
