@@ -15,17 +15,41 @@ const LISTINGS_FILE = path.join(DATA_DIR, 'listings.json');
 // Функция загрузки профилей из файла
 function loadUsersFromFile() {
     try {
+        console.log(`🔍 Попытка загрузить файл: ${USERS_FILE}`);
+        console.log(`📁 Директория существует: ${fs.existsSync(DATA_DIR)}`);
+        console.log(`📄 Файл существует: ${fs.existsSync(USERS_FILE)}`);
+        
         if (fs.existsSync(USERS_FILE)) {
             const data = fs.readFileSync(USERS_FILE, 'utf8');
+            console.log(`📄 Размер файла: ${data.length} байт`);
             const loaded = JSON.parse(data);
             users = Array.isArray(loaded) ? loaded : [];
             console.log(`✅ Загружено ${users.length} профилей из файла`);
+            
+            // Логируем всех пользователей для отладки
+            if (users.length > 0) {
+                console.log(`👥 Пользователи в памяти:`, users.map(u => ({
+                    telegramId: u.telegramId,
+                    name: u.name,
+                    publicId: u.publicId
+                })));
+            }
         } else {
             users = [];
             console.log('📝 Файл профилей не найден, создан новый массив');
+            console.log(`📁 Проверяем директорию: ${DATA_DIR}`);
+            if (fs.existsSync(DATA_DIR)) {
+                const files = fs.readdirSync(DATA_DIR);
+                console.log(`📂 Файлы в директории:`, files);
+            }
         }
     } catch (error) {
         console.error('❌ Ошибка загрузки профилей из файла:', error);
+        console.error('Детали ошибки:', {
+            message: error.message,
+            stack: error.stack,
+            filePath: USERS_FILE
+        });
         users = [];
     }
 }
@@ -98,6 +122,21 @@ export default async function handler(req, res) {
             });
         } else {
             console.warn('⚠️ Массив users пуст после загрузки!');
+            
+            // Если файл существует, но массив пуст, пытаемся прочитать напрямую
+            if (fs.existsSync(USERS_FILE)) {
+                try {
+                    const directRead = fs.readFileSync(USERS_FILE, 'utf8');
+                    const directData = JSON.parse(directRead);
+                    if (Array.isArray(directData) && directData.length > 0) {
+                        console.log(`⚠️ Обнаружено несоответствие! В файле ${directData.length} пользователей, но в памяти 0`);
+                        console.log(`🔄 Принудительно обновляем массив users из файла`);
+                        users = directData;
+                    }
+                } catch (directError) {
+                    console.error('❌ Ошибка прямого чтения:', directError);
+                }
+            }
         }
 
         if (req.method === 'GET') {
