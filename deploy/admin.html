@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админ-панель - Пользователи</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f3f4f6;
+            color: #111827;
+            padding: 20px;
+        }
+
+        .admin-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .admin-header {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 24px;
+        }
+
+        .admin-header h1 {
+            font-size: 2rem;
+            margin-bottom: 8px;
+            color: #111827;
+        }
+
+        .admin-header p {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+
+        .admin-controls {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 24px;
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .search-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .sort-select {
+            padding: 12px 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .sort-select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .stats-bar {
+            background: white;
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 24px;
+            display: flex;
+            gap: 32px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .users-table-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .users-table thead {
+            background: #f9fafb;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .users-table th {
+            padding: 16px;
+            text-align: left;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .users-table td {
+            padding: 16px;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: 0.875rem;
+        }
+
+        .users-table tbody tr:hover {
+            background: #f9fafb;
+        }
+
+        .users-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: linear-gradient(135deg, #a855f7 0%, #3b82f6 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .user-name {
+            font-weight: 500;
+            color: #111827;
+            margin-bottom: 4px;
+        }
+
+        .user-username {
+            font-size: 0.75rem;
+            color: #6b7280;
+        }
+
+        .user-id {
+            font-family: 'Courier New', monospace;
+            font-size: 0.75rem;
+            color: #6b7280;
+            background: #f3f4f6;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .user-stats {
+            display: flex;
+            gap: 16px;
+            font-size: 0.75rem;
+            color: #6b7280;
+        }
+
+        .user-stat-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .pagination-btn {
+            padding: 8px 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            background: white;
+            color: #111827;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            background: #f3f4f6;
+            border-color: #d1d5db;
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination-info {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin: 0 16px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6b7280;
+        }
+
+        .error {
+            text-align: center;
+            padding: 60px 20px;
+            color: #ef4444;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6b7280;
+        }
+
+        @media (max-width: 768px) {
+            .users-table {
+                font-size: 0.7rem;
+            }
+
+            .users-table th,
+            .users-table td {
+                padding: 10px 6px;
+            }
+
+            .users-table th:nth-child(3),
+            .users-table td:nth-child(3) {
+                display: none;
+            }
+
+            .user-stats {
+                flex-direction: column;
+                gap: 4px;
+            }
+
+            .admin-controls {
+                flex-direction: column;
+            }
+
+            .search-input {
+                width: 100%;
+            }
+
+            .stats-bar {
+                gap: 16px;
+            }
+
+            .stat-value {
+                font-size: 1.25rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1>👥 Управление пользователями</h1>
+            <p>Просмотр и управление всеми пользователями бота</p>
+        </div>
+
+        <div class="admin-controls">
+            <input 
+                type="text" 
+                id="search-input" 
+                class="search-input" 
+                placeholder="Поиск по имени, username, ID..."
+                autocomplete="off"
+            >
+            <select id="sort-select" class="sort-select">
+                <option value="createdAt-desc">Дата регистрации (новые)</option>
+                <option value="createdAt-asc">Дата регистрации (старые)</option>
+                <option value="lastSeenAt-desc">Последний визит (недавно)</option>
+                <option value="lastSeenAt-asc">Последний визит (давно)</option>
+                <option value="name-asc">Имя (А-Я)</option>
+                <option value="name-desc">Имя (Я-А)</option>
+            </select>
+            <button onclick="testAPI()" style="
+                padding: 8px 16px;
+                background: #3b82f6;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 0.875rem;
+            ">Тест API</button>
+        </div>
+
+        <div class="stats-bar" id="stats-bar">
+            <div class="stat-item">
+                <div class="stat-label">Всего пользователей</div>
+                <div class="stat-value" id="stat-total">0</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Найдено</div>
+                <div class="stat-value" id="stat-filtered">0</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Страница</div>
+                <div class="stat-value" id="stat-page">0</div>
+            </div>
+        </div>
+
+        <div class="users-table-container">
+            <div id="loading" class="loading">Загрузка пользователей...</div>
+            <div id="error" class="error" style="display: none;"></div>
+            <div id="empty" class="empty" style="display: none;">Пользователи не найдены</div>
+            
+            <table class="users-table" id="users-table" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>Пользователь</th>
+                        <th>ID</th>
+                        <th>Объявления</th>
+                        <th>Статистика</th>
+                        <th>Рейтинг</th>
+                        <th>Регистрация</th>
+                        <th>Последний визит</th>
+                    </tr>
+                </thead>
+                <tbody id="users-tbody">
+                </tbody>
+            </table>
+        </div>
+
+        <div class="pagination" id="pagination" style="display: none;">
+            <button class="pagination-btn" id="prev-btn" onclick="changePage(-1)">← Назад</button>
+            <span class="pagination-info" id="page-info">Страница 1 из 1</span>
+            <button class="pagination-btn" id="next-btn" onclick="changePage(1)">Вперед →</button>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+        // Проверяем, есть ли префикс /www в текущем пути
+        const currentPath = window.location.pathname;
+        const hasWwwPrefix = currentPath.startsWith('/www');
+        const apiPrefix = hasWwwPrefix ? '/www' : '';
+        const API_URL = `${API_BASE}${apiPrefix}/api/admin/users`;
+        
+        let currentPage = 1;
+        let currentLimit = 50;
+        let currentSearch = '';
+        let currentSort = 'createdAt-desc';
+        let totalPages = 1;
+
+        // Загрузка пользователей
+        async function loadUsers() {
+            const loadingEl = document.getElementById('loading');
+            const errorEl = document.getElementById('error');
+            const emptyEl = document.getElementById('empty');
+            const tableEl = document.getElementById('users-table');
+            const tbodyEl = document.getElementById('users-tbody');
+            const paginationEl = document.getElementById('pagination');
+
+            loadingEl.style.display = 'block';
+            errorEl.style.display = 'none';
+            emptyEl.style.display = 'none';
+            tableEl.style.display = 'none';
+            paginationEl.style.display = 'none';
+
+            try {
+                const [sortBy, sortOrder] = currentSort.split('-');
+                const params = new URLSearchParams({
+                    page: currentPage,
+                    limit: currentLimit,
+                    search: currentSearch,
+                    sortBy,
+                    sortOrder
+                });
+
+                const response = await fetch(`${API_URL}?${params}`);
+                
+                if (!response.ok) {
+                    throw new Error(`Ошибка загрузки: ${response.status}`);
+                }
+
+                const data = await response.json();
+                const { users, stats } = data;
+
+                console.log('✅ Получены данные:', {
+                    usersCount: users.length,
+                    totalUsers: stats.total,
+                    filtered: stats.filtered,
+                    page: stats.page,
+                    totalPages: stats.totalPages
+                });
+
+                loadingEl.style.display = 'none';
+
+                if (users.length === 0) {
+                    emptyEl.style.display = 'block';
+                    return;
+                }
+
+                // Обновляем статистику
+                document.getElementById('stat-total').textContent = stats.total;
+                document.getElementById('stat-filtered').textContent = stats.filtered;
+                document.getElementById('stat-page').textContent = `${stats.page} / ${stats.totalPages}`;
+
+                // Отображаем пользователей
+                tbodyEl.innerHTML = users.map(user => {
+                    const avatar = user.avatar 
+                        ? `<img src="${user.avatar}" alt="${user.name || 'User'}">`
+                        : `<span>${(user.name || 'U').charAt(0).toUpperCase()}</span>`;
+                    
+                    const name = user.name || 'Без имени';
+                    const username = user.username ? `@${user.username}` : '—';
+                    const publicId = user.publicId || '—';
+                    const telegramId = user.telegramId || '—';
+                    
+                    const rating = typeof user.rating === 'number' ? user.rating.toFixed(1) : '0.0';
+                    const reviewsCount = Array.isArray(user.reviews) ? user.reviews.length : 0;
+                    const salesCount = typeof user.salesCount === 'number' ? user.salesCount : 0;
+                    
+                    // Статистика объявлений
+                    const listingsStats = user.listingsStats || {};
+                    const totalListings = listingsStats.total || 0;
+                    const activeListings = listingsStats.active || 0;
+                    const deletedListings = listingsStats.deleted || 0;
+                    const soldListings = listingsStats.sold || 0;
+                    
+                    const createdAt = user.createdAt 
+                        ? new Date(user.createdAt).toLocaleString('ru-RU', { 
+                            day: '2-digit', 
+                            month: '2-digit', 
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })
+                        : '—';
+                    
+                    const lastSeenAt = user.lastSeenAt 
+                        ? new Date(user.lastSeenAt).toLocaleString('ru-RU', { 
+                            day: '2-digit', 
+                            month: '2-digit', 
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })
+                        : '—';
+
+                    return `
+                        <tr onclick="showUserDetails('${escapeHtml(telegramId)}')" style="cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f3f4f6'" onmouseout="this.style.backgroundColor='transparent'">
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <div class="user-avatar">${avatar}</div>
+                                    <div>
+                                        <div class="user-name">${escapeHtml(name)}</div>
+                                        <div class="user-username">${escapeHtml(username)}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div style="display: flex; flex-direction: column; gap: 4px;">
+                                    <span class="user-id">${escapeHtml(publicId)}</span>
+                                    <span style="font-size: 0.7rem; color: #9ca3af;">TG: ${escapeHtml(telegramId)}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.75rem;">
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <span style="color: #10b981; font-weight: 500;">✓</span>
+                                        <span>Активных: <strong>${activeListings}</strong></span>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <span style="color: #ef4444; font-weight: 500;">✗</span>
+                                        <span>Удалено: <strong>${deletedListings}</strong></span>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <span style="color: #6b7280; font-weight: 500;">📊</span>
+                                        <span>Всего: <strong>${totalListings}</strong></span>
+                                    </div>
+                                    ${soldListings > 0 ? `
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <span style="color: #3b82f6; font-weight: 500;">💰</span>
+                                        <span>Продано: <strong>${soldListings}</strong></span>
+                                    </div>
+                                    ` : ''}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="user-stats">
+                                    <div class="user-stat-item">
+                                        <span>📦</span>
+                                        <span>${salesCount}</span>
+                                    </div>
+                                    <div class="user-stat-item">
+                                        <span>💬</span>
+                                        <span>${reviewsCount}</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 4px;">
+                                    <span>⭐</span>
+                                    <span style="font-weight: 500;">${rating}</span>
+                                </div>
+                            </td>
+                            <td style="font-size: 0.75rem; color: #6b7280;">${createdAt}</td>
+                            <td style="font-size: 0.75rem; color: #6b7280;">${lastSeenAt}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+                tableEl.style.display = 'table';
+                
+                // Обновляем пагинацию
+                totalPages = stats.totalPages;
+                updatePagination();
+                paginationEl.style.display = 'flex';
+
+            } catch (error) {
+                console.error('Ошибка загрузки пользователей:', error);
+                loadingEl.style.display = 'none';
+                errorEl.style.display = 'block';
+                errorEl.textContent = `Ошибка: ${error.message}`;
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function updatePagination() {
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            const pageInfo = document.getElementById('page-info');
+
+            prevBtn.disabled = currentPage <= 1;
+            nextBtn.disabled = currentPage >= totalPages;
+            pageInfo.textContent = `Страница ${currentPage} из ${totalPages}`;
+        }
+
+        function changePage(delta) {
+            const newPage = currentPage + delta;
+            if (newPage >= 1 && newPage <= totalPages) {
+                currentPage = newPage;
+                loadUsers();
+            }
+        }
+
+        // Поиск с задержкой
+        let searchTimeout;
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                currentSearch = e.target.value.trim();
+                currentPage = 1;
+                loadUsers();
+            }, 300);
+        });
+
+        // Сортировка
+        document.getElementById('sort-select').addEventListener('change', (e) => {
+            currentSort = e.target.value;
+            currentPage = 1;
+            loadUsers();
+        });
+
+        // Загружаем пользователей при загрузке страницы
+        loadUsers();
+
+        // Тестовая функция для проверки API
+        window.testAPI = async function() {
+            console.log('🧪 Тестирование API...');
+            
+            // Тест 1: Проверка админ-панели
+            try {
+                const adminResponse = await fetch(`${API_URL}?page=1&limit=10`);
+                const adminData = await adminResponse.json();
+                console.log('✅ Админ API работает:', adminData);
+            } catch (error) {
+                console.error('❌ Ошибка админ API:', error);
+            }
+            
+            // Тест 2: Создание тестового пользователя
+            try {
+                const testUser = {
+                    action: 'init',
+                    telegramId: 'test_' + Date.now(),
+                    username: 'test_user',
+                    name: 'Test User',
+                    avatar: null
+                };
+                
+                const usersAPI = `${API_BASE}${apiPrefix}/api/users`;
+                console.log('📤 Отправка тестового пользователя:', testUser);
+                
+                const createResponse = await fetch(usersAPI, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testUser)
+                });
+                
+                if (createResponse.ok) {
+                    const createdUser = await createResponse.json();
+                    console.log('✅ Тестовый пользователь создан:', createdUser);
+                    
+                    // Перезагружаем список пользователей
+                    setTimeout(() => {
+                        loadUsers();
+                    }, 1000);
+                } else {
+                    const errorText = await createResponse.text();
+                    console.error('❌ Ошибка создания пользователя:', createResponse.status, errorText);
+                }
+            } catch (error) {
+                console.error('❌ Ошибка теста создания пользователя:', error);
+            }
+        };
+
+        // Функция для отображения детальной информации о пользователе
+        window.showUserDetails = async function(telegramId) {
+            try {
+                const response = await fetch(`${API_URL}?search=${encodeURIComponent(telegramId)}&limit=100`);
+                if (!response.ok) {
+                    throw new Error('Ошибка загрузки данных пользователя');
+                }
+                
+                const data = await response.json();
+                const user = data.users && data.users.length > 0 ? data.users.find(u => u.telegramId === telegramId || u.telegramId?.toString() === telegramId.toString()) : null;
+                
+                if (!user) {
+                    alert('Пользователь не найден');
+                    return;
+                }
+
+                // Создаем модальное окно
+                const modal = document.createElement('div');
+                modal.id = 'user-details-modal';
+                modal.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.5);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 10000;
+                    padding: 20px;
+                `;
+
+                const listingsStats = user.listingsStats || {};
+                const createdAt = user.createdAt 
+                    ? new Date(user.createdAt).toLocaleString('ru-RU', { 
+                        day: '2-digit', 
+                        month: '2-digit', 
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })
+                    : '—';
+                
+                const lastSeenAt = user.lastSeenAt 
+                    ? new Date(user.lastSeenAt).toLocaleString('ru-RU', { 
+                        day: '2-digit', 
+                        month: '2-digit', 
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })
+                    : '—';
+
+                modal.innerHTML = `
+                    <div style="
+                        background: white;
+                        border-radius: 16px;
+                        padding: 32px;
+                        max-width: 600px;
+                        width: 100%;
+                        max-height: 90vh;
+                        overflow-y: auto;
+                        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+                    ">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                            <h2 style="font-size: 1.5rem; font-weight: 600; color: #111827;">Детали пользователя</h2>
+                            <button onclick="this.closest('#user-details-modal').remove()" style="
+                                background: #f3f4f6;
+                                border: none;
+                                border-radius: 8px;
+                                width: 32px;
+                                height: 32px;
+                                cursor: pointer;
+                                font-size: 1.25rem;
+                                color: #6b7280;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                            ">×</button>
+                        </div>
+
+                        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid #e5e7eb;">
+                            <div style="
+                                width: 80px;
+                                height: 80px;
+                                border-radius: 50%;
+                                overflow: hidden;
+                                background: #f3f4f6;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                font-size: 2rem;
+                                font-weight: 600;
+                                color: #6b7280;
+                            ">
+                                ${user.avatar 
+                                    ? `<img src="${user.avatar}" alt="${user.name || 'User'}" style="width: 100%; height: 100%; object-fit: cover;">`
+                                    : `<span>${(user.name || 'U').charAt(0).toUpperCase()}</span>`
+                                }
+                            </div>
+                            <div>
+                                <div style="font-size: 1.25rem; font-weight: 600; color: #111827; margin-bottom: 4px;">
+                                    ${escapeHtml(user.name || 'Без имени')}
+                                </div>
+                                <div style="font-size: 0.875rem; color: #6b7280;">
+                                    ${user.username ? `@${escapeHtml(user.username)}` : '—'}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 24px;">
+                            <div style="
+                                background: #f9fafb;
+                                padding: 16px;
+                                border-radius: 12px;
+                            ">
+                                <div style="font-size: 0.75rem; color: #6b7280; margin-bottom: 4px;">Персональный ID</div>
+                                <div style="font-size: 0.875rem; font-weight: 600; color: #111827; font-family: monospace;">
+                                    ${escapeHtml(user.publicId || '—')}
+                                </div>
+                            </div>
+                            <div style="
+                                background: #f9fafb;
+                                padding: 16px;
+                                border-radius: 12px;
+                            ">
+                                <div style="font-size: 0.75rem; color: #6b7280; margin-bottom: 4px;">Telegram ID</div>
+                                <div style="font-size: 0.875rem; font-weight: 600; color: #111827; font-family: monospace;">
+                                    ${escapeHtml(user.telegramId || '—')}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 24px;">
+                            <h3 style="font-size: 1rem; font-weight: 600; color: #111827; margin-bottom: 16px;">Статистика объявлений</h3>
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+                                <div style="background: #ecfdf5; padding: 16px; border-radius: 12px; border: 1px solid #10b981;">
+                                    <div style="font-size: 0.75rem; color: #059669; margin-bottom: 4px;">Активных</div>
+                                    <div style="font-size: 1.5rem; font-weight: 700; color: #10b981;">
+                                        ${listingsStats.active || 0}
+                                    </div>
+                                </div>
+                                <div style="background: #fef2f2; padding: 16px; border-radius: 12px; border: 1px solid #ef4444;">
+                                    <div style="font-size: 0.75rem; color: #dc2626; margin-bottom: 4px;">Удалено</div>
+                                    <div style="font-size: 1.5rem; font-weight: 700; color: #ef4444;">
+                                        ${listingsStats.deleted || 0}
+                                    </div>
+                                </div>
+                                <div style="background: #eff6ff; padding: 16px; border-radius: 12px; border: 1px solid #3b82f6;">
+                                    <div style="font-size: 0.75rem; color: #2563eb; margin-bottom: 4px;">Продано</div>
+                                    <div style="font-size: 1.5rem; font-weight: 700; color: #3b82f6;">
+                                        ${listingsStats.sold || 0}
+                                    </div>
+                                </div>
+                                <div style="background: #f9fafb; padding: 16px; border-radius: 12px; border: 1px solid #6b7280;">
+                                    <div style="font-size: 0.75rem; color: #4b5563; margin-bottom: 4px;">Всего</div>
+                                    <div style="font-size: 1.5rem; font-weight: 700; color: #111827;">
+                                        ${listingsStats.total || 0}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 24px;">
+                            <h3 style="font-size: 1rem; font-weight: 600; color: #111827; margin-bottom: 16px;">Дополнительная информация</h3>
+                            <div style="display: grid; gap: 12px;">
+                                <div style="display: flex; justify-content: space-between; padding: 12px; background: #f9fafb; border-radius: 8px;">
+                                    <span style="color: #6b7280;">Рейтинг</span>
+                                    <span style="font-weight: 600;">⭐ ${typeof user.rating === 'number' ? user.rating.toFixed(1) : '0.0'}</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; padding: 12px; background: #f9fafb; border-radius: 8px;">
+                                    <span style="color: #6b7280;">Продаж/Обменов</span>
+                                    <span style="font-weight: 600;">${user.salesCount || 0}</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; padding: 12px; background: #f9fafb; border-radius: 8px;">
+                                    <span style="color: #6b7280;">Отзывов</span>
+                                    <span style="font-weight: 600;">${Array.isArray(user.reviews) ? user.reviews.length : 0}</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; padding: 12px; background: #f9fafb; border-radius: 8px;">
+                                    <span style="color: #6b7280;">Дата регистрации</span>
+                                    <span style="font-weight: 600;">${createdAt}</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; padding: 12px; background: #f9fafb; border-radius: 8px;">
+                                    <span style="color: #6b7280;">Последний визит</span>
+                                    <span style="font-weight: 600;">${lastSeenAt}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        ${user.about ? `
+                        <div style="margin-bottom: 24px;">
+                            <h3 style="font-size: 1rem; font-weight: 600; color: #111827; margin-bottom: 8px;">О пользователе</h3>
+                            <div style="padding: 12px; background: #f9fafb; border-radius: 8px; color: #374151;">
+                                ${escapeHtml(user.about)}
+                            </div>
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+
+                document.body.appendChild(modal);
+                
+                // Закрытие по клику вне модального окна
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.remove();
+                    }
+                });
+            } catch (error) {
+                console.error('Ошибка загрузки деталей пользователя:', error);
+                alert('Не удалось загрузить информацию о пользователе');
+            }
+        };
+    </script>
+</body>
+</html>
+
