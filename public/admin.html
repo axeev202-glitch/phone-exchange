@@ -474,7 +474,7 @@
                         : '—';
 
                     return `
-                        <tr>
+                        <tr onclick="showUserDetails('${escapeHtml(telegramId)}')" style="cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f3f4f6'" onmouseout="this.style.backgroundColor='transparent'">
                             <td>
                                 <div style="display: flex; align-items: center; gap: 12px;">
                                     <div class="user-avatar">${avatar}</div>
@@ -595,6 +595,221 @@
 
         // Загружаем пользователей при загрузке страницы
         loadUsers();
+
+        // Функция для отображения детальной информации о пользователе
+        window.showUserDetails = async function(telegramId) {
+            try {
+                const response = await fetch(`${API_URL}?search=${encodeURIComponent(telegramId)}&limit=100`);
+                if (!response.ok) {
+                    throw new Error('Ошибка загрузки данных пользователя');
+                }
+                
+                const data = await response.json();
+                const user = data.users && data.users.length > 0 ? data.users.find(u => u.telegramId === telegramId || u.telegramId?.toString() === telegramId.toString()) : null;
+                
+                if (!user) {
+                    alert('Пользователь не найден');
+                    return;
+                }
+
+                // Создаем модальное окно
+                const modal = document.createElement('div');
+                modal.id = 'user-details-modal';
+                modal.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.5);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 10000;
+                    padding: 20px;
+                `;
+
+                const listingsStats = user.listingsStats || {};
+                const createdAt = user.createdAt 
+                    ? new Date(user.createdAt).toLocaleString('ru-RU', { 
+                        day: '2-digit', 
+                        month: '2-digit', 
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })
+                    : '—';
+                
+                const lastSeenAt = user.lastSeenAt 
+                    ? new Date(user.lastSeenAt).toLocaleString('ru-RU', { 
+                        day: '2-digit', 
+                        month: '2-digit', 
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })
+                    : '—';
+
+                modal.innerHTML = `
+                    <div style="
+                        background: white;
+                        border-radius: 16px;
+                        padding: 32px;
+                        max-width: 600px;
+                        width: 100%;
+                        max-height: 90vh;
+                        overflow-y: auto;
+                        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+                    ">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                            <h2 style="font-size: 1.5rem; font-weight: 600; color: #111827;">Детали пользователя</h2>
+                            <button onclick="this.closest('#user-details-modal').remove()" style="
+                                background: #f3f4f6;
+                                border: none;
+                                border-radius: 8px;
+                                width: 32px;
+                                height: 32px;
+                                cursor: pointer;
+                                font-size: 1.25rem;
+                                color: #6b7280;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                            ">×</button>
+                        </div>
+
+                        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid #e5e7eb;">
+                            <div style="
+                                width: 80px;
+                                height: 80px;
+                                border-radius: 50%;
+                                overflow: hidden;
+                                background: #f3f4f6;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                font-size: 2rem;
+                                font-weight: 600;
+                                color: #6b7280;
+                            ">
+                                ${user.avatar 
+                                    ? `<img src="${user.avatar}" alt="${user.name || 'User'}" style="width: 100%; height: 100%; object-fit: cover;">`
+                                    : `<span>${(user.name || 'U').charAt(0).toUpperCase()}</span>`
+                                }
+                            </div>
+                            <div>
+                                <div style="font-size: 1.25rem; font-weight: 600; color: #111827; margin-bottom: 4px;">
+                                    ${escapeHtml(user.name || 'Без имени')}
+                                </div>
+                                <div style="font-size: 0.875rem; color: #6b7280;">
+                                    ${user.username ? `@${escapeHtml(user.username)}` : '—'}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 24px;">
+                            <div style="
+                                background: #f9fafb;
+                                padding: 16px;
+                                border-radius: 12px;
+                            ">
+                                <div style="font-size: 0.75rem; color: #6b7280; margin-bottom: 4px;">Персональный ID</div>
+                                <div style="font-size: 0.875rem; font-weight: 600; color: #111827; font-family: monospace;">
+                                    ${escapeHtml(user.publicId || '—')}
+                                </div>
+                            </div>
+                            <div style="
+                                background: #f9fafb;
+                                padding: 16px;
+                                border-radius: 12px;
+                            ">
+                                <div style="font-size: 0.75rem; color: #6b7280; margin-bottom: 4px;">Telegram ID</div>
+                                <div style="font-size: 0.875rem; font-weight: 600; color: #111827; font-family: monospace;">
+                                    ${escapeHtml(user.telegramId || '—')}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 24px;">
+                            <h3 style="font-size: 1rem; font-weight: 600; color: #111827; margin-bottom: 16px;">Статистика объявлений</h3>
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+                                <div style="background: #ecfdf5; padding: 16px; border-radius: 12px; border: 1px solid #10b981;">
+                                    <div style="font-size: 0.75rem; color: #059669; margin-bottom: 4px;">Активных</div>
+                                    <div style="font-size: 1.5rem; font-weight: 700; color: #10b981;">
+                                        ${listingsStats.active || 0}
+                                    </div>
+                                </div>
+                                <div style="background: #fef2f2; padding: 16px; border-radius: 12px; border: 1px solid #ef4444;">
+                                    <div style="font-size: 0.75rem; color: #dc2626; margin-bottom: 4px;">Удалено</div>
+                                    <div style="font-size: 1.5rem; font-weight: 700; color: #ef4444;">
+                                        ${listingsStats.deleted || 0}
+                                    </div>
+                                </div>
+                                <div style="background: #eff6ff; padding: 16px; border-radius: 12px; border: 1px solid #3b82f6;">
+                                    <div style="font-size: 0.75rem; color: #2563eb; margin-bottom: 4px;">Продано</div>
+                                    <div style="font-size: 1.5rem; font-weight: 700; color: #3b82f6;">
+                                        ${listingsStats.sold || 0}
+                                    </div>
+                                </div>
+                                <div style="background: #f9fafb; padding: 16px; border-radius: 12px; border: 1px solid #6b7280;">
+                                    <div style="font-size: 0.75rem; color: #4b5563; margin-bottom: 4px;">Всего</div>
+                                    <div style="font-size: 1.5rem; font-weight: 700; color: #111827;">
+                                        ${listingsStats.total || 0}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 24px;">
+                            <h3 style="font-size: 1rem; font-weight: 600; color: #111827; margin-bottom: 16px;">Дополнительная информация</h3>
+                            <div style="display: grid; gap: 12px;">
+                                <div style="display: flex; justify-content: space-between; padding: 12px; background: #f9fafb; border-radius: 8px;">
+                                    <span style="color: #6b7280;">Рейтинг</span>
+                                    <span style="font-weight: 600;">⭐ ${typeof user.rating === 'number' ? user.rating.toFixed(1) : '0.0'}</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; padding: 12px; background: #f9fafb; border-radius: 8px;">
+                                    <span style="color: #6b7280;">Продаж/Обменов</span>
+                                    <span style="font-weight: 600;">${user.salesCount || 0}</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; padding: 12px; background: #f9fafb; border-radius: 8px;">
+                                    <span style="color: #6b7280;">Отзывов</span>
+                                    <span style="font-weight: 600;">${Array.isArray(user.reviews) ? user.reviews.length : 0}</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; padding: 12px; background: #f9fafb; border-radius: 8px;">
+                                    <span style="color: #6b7280;">Дата регистрации</span>
+                                    <span style="font-weight: 600;">${createdAt}</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; padding: 12px; background: #f9fafb; border-radius: 8px;">
+                                    <span style="color: #6b7280;">Последний визит</span>
+                                    <span style="font-weight: 600;">${lastSeenAt}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        ${user.about ? `
+                        <div style="margin-bottom: 24px;">
+                            <h3 style="font-size: 1rem; font-weight: 600; color: #111827; margin-bottom: 8px;">О пользователе</h3>
+                            <div style="padding: 12px; background: #f9fafb; border-radius: 8px; color: #374151;">
+                                ${escapeHtml(user.about)}
+                            </div>
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+
+                document.body.appendChild(modal);
+                
+                // Закрытие по клику вне модального окна
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.remove();
+                    }
+                });
+            } catch (error) {
+                console.error('Ошибка загрузки деталей пользователя:', error);
+                alert('Не удалось загрузить информацию о пользователе');
+            }
+        };
     </script>
 </body>
 </html>

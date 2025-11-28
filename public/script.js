@@ -254,7 +254,13 @@ async function initUserProfile() {
         return;
     }
 
-    console.log('Initializing user profile for:', currentUser.id);
+    console.log('🔄 Начало авторегистрации для пользователя:', currentUser.id);
+    console.log('📋 Данные пользователя:', {
+        id: currentUser.id,
+        username: currentUser.username,
+        name: currentUser.name,
+        photoUrl: currentUser.photoUrl
+    });
 
     const payload = {
         action: 'init',
@@ -265,6 +271,7 @@ async function initUserProfile() {
     };
 
     try {
+        console.log('📤 Отправка запроса на сервер:', payload);
         const response = await fetch(USERS_API_URL, {
             method: 'POST',
             headers: {
@@ -275,17 +282,19 @@ async function initUserProfile() {
 
         if (!response.ok) {
             const errorText = await response.text();
-            console.error('Profile init error:', response.status, errorText);
+            console.error('❌ Ошибка регистрации:', response.status, errorText);
             throw new Error(`Users API error: ${response.status}`);
         }
 
         currentProfile = await response.json();
-        console.log('Profile initialized successfully:', {
+        console.log('✅ Профиль успешно инициализирован:', {
             telegramId: currentProfile.telegramId,
             publicId: currentProfile.publicId,
             name: currentProfile.name,
             username: currentProfile.username,
-            avatar: currentProfile.avatar
+            avatar: currentProfile.avatar,
+            createdAt: currentProfile.createdAt,
+            lastSeenAt: currentProfile.lastSeenAt
         });
         
         // Обновляем currentUser с данными из профиля
