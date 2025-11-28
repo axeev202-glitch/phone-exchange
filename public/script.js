@@ -199,6 +199,12 @@ async function initApp() {
     
     // Получаем пользователя из Telegram
     const tgUser = tg.initDataUnsafe?.user;
+    console.log('🔍 Проверка данных Telegram:', {
+        hasInitData: !!tg.initDataUnsafe,
+        hasUser: !!tgUser,
+        userData: tgUser
+    });
+    
     if (tgUser) {
         currentUser = {
             id: tgUser.id.toString(),
@@ -208,7 +214,7 @@ async function initApp() {
             name: `${tgUser.first_name} ${tgUser.last_name || ''}`.trim(),
             photoUrl: tgUser.photo_url || null
         };
-        console.log('Telegram user:', currentUser);
+        console.log('✅ Telegram user получен:', currentUser);
     } else {
         // Запасной вариант для тестирования вне Telegram
         currentUser = {
@@ -216,18 +222,21 @@ async function initApp() {
             name: 'Test User',
             username: 'test_user'
         };
-        console.log('Test user:', currentUser);
+        console.log('⚠️ Test user (вне Telegram):', currentUser);
     }
     
     // Инициализируем профиль пользователя на сервере (авторегистрация при первом входе)
+    console.log('🚀 Начинаем авторегистрацию...');
     try {
         await initUserProfile();
+        console.log('✅ Авторегистрация завершена успешно');
         updateProfile();
         await loadListings();
         // Обновляем время последнего визита после загрузки
         updateLastSeen();
     } catch (error) {
-        console.error('Ошибка инициализации профиля:', error);
+        console.error('❌ Ошибка инициализации профиля:', error);
+        console.error('Stack trace:', error.stack);
         updateProfile();
         await loadListings();
     }
