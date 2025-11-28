@@ -329,6 +329,15 @@
                 <option value="name-asc">Имя (А-Я)</option>
                 <option value="name-desc">Имя (Я-А)</option>
             </select>
+            <button onclick="testAPI()" style="
+                padding: 8px 16px;
+                background: #3b82f6;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 0.875rem;
+            ">Тест API</button>
         </div>
 
         <div class="stats-bar" id="stats-bar">
@@ -603,6 +612,57 @@
 
         // Загружаем пользователей при загрузке страницы
         loadUsers();
+
+        // Тестовая функция для проверки API
+        window.testAPI = async function() {
+            console.log('🧪 Тестирование API...');
+            
+            // Тест 1: Проверка админ-панели
+            try {
+                const adminResponse = await fetch(`${API_URL}?page=1&limit=10`);
+                const adminData = await adminResponse.json();
+                console.log('✅ Админ API работает:', adminData);
+            } catch (error) {
+                console.error('❌ Ошибка админ API:', error);
+            }
+            
+            // Тест 2: Создание тестового пользователя
+            try {
+                const testUser = {
+                    action: 'init',
+                    telegramId: 'test_' + Date.now(),
+                    username: 'test_user',
+                    name: 'Test User',
+                    avatar: null
+                };
+                
+                const usersAPI = `${API_BASE}/api/users`;
+                console.log('📤 Отправка тестового пользователя:', testUser);
+                
+                const createResponse = await fetch(usersAPI, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testUser)
+                });
+                
+                if (createResponse.ok) {
+                    const createdUser = await createResponse.json();
+                    console.log('✅ Тестовый пользователь создан:', createdUser);
+                    
+                    // Перезагружаем список пользователей
+                    setTimeout(() => {
+                        loadUsers();
+                    }, 1000);
+                } else {
+                    const errorText = await createResponse.text();
+                    console.error('❌ Ошибка создания пользователя:', createResponse.status, errorText);
+                }
+            } catch (error) {
+                console.error('❌ Ошибка теста создания пользователя:', error);
+            }
+        };
 
         // Функция для отображения детальной информации о пользователе
         window.showUserDetails = async function(telegramId) {
