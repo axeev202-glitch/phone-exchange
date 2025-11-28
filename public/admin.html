@@ -419,6 +419,14 @@
                 const data = await response.json();
                 const { users, stats } = data;
 
+                console.log('✅ Получены данные:', {
+                    usersCount: users.length,
+                    totalUsers: stats.total,
+                    filtered: stats.filtered,
+                    page: stats.page,
+                    totalPages: stats.totalPages
+                });
+
                 loadingEl.style.display = 'none';
 
                 if (users.length === 0) {
