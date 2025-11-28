@@ -1,0 +1,49 @@
+# Зависимости
+node_modules/
+npm-debug.log*
+
+# Git
+.git/
+.gitignore
+
+# Данные (не копируем в образ)
+data/
+*.json
+!package.json
+
+# Логи
+*.log
+logs/
+
+# Переменные окружения
+.env
+.env.local
+env.example
+
+# Docker файлы
+docker-compose.yml
+Dockerfile
+.dockerignore
+
+# Документация
+README.md
+DEPLOY.md
+*.md
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Временные файлы
+.tmp/
+tmp/
+
+# SSL сертификаты (будут монтироваться)
+ssl/
+

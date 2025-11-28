@@ -9,8 +9,9 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// Порт из переменной окружения (хостинг устанавливает автоматически)
+// Порт из переменной окружения (для VDS обычно 3000, Nginx проксирует на этот порт)
 const PORT = process.env.PORT || 3000;
+const HOST = process.env.HOST || '0.0.0.0';
 
 // Middleware
 app.use(cors());
@@ -167,11 +168,14 @@ if (!fs.existsSync(dataDir)) {
 }
 
 // Запуск сервера
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Сервер запущен на порту ${PORT}`);
+app.listen(PORT, HOST, () => {
+    console.log(`🚀 Сервер запущен на ${HOST}:${PORT}`);
     console.log(`📁 Рабочая директория: ${__dirname}`);
     console.log(`🌐 Статические файлы из: ${indexPath}`);
     console.log(`💾 Данные сохраняются в: ${dataDir}`);
+    if (process.env.DOMAIN) {
+        console.log(`🌍 Домен: ${process.env.DOMAIN}`);
+    }
     console.log(`✅ Сервер готов к работе!`);
 });
 
