@@ -67,6 +67,17 @@ export default async function handler(req, res) {
         loadListingsFromFile();
         
         console.log(`📊 Админ-панель: Загружено ${users.length} пользователей, ${listings.length} объявлений`);
+        console.log(`📁 Путь к файлу пользователей: ${USERS_FILE}`);
+        console.log(`📁 Файл пользователей существует: ${fs.existsSync(USERS_FILE)}`);
+        
+        if (users.length > 0) {
+            console.log(`👤 Пример пользователя:`, {
+                telegramId: users[0].telegramId,
+                name: users[0].name,
+                publicId: users[0].publicId,
+                createdAt: users[0].createdAt
+            });
+        }
 
         if (req.method === 'GET') {
             const { page = 1, limit = 50, search = '', sortBy = 'createdAt', sortOrder = 'desc' } = req.query || {};
@@ -128,8 +139,8 @@ export default async function handler(req, res) {
             
             // Статистика
             const stats = {
-                total: users.length,
-                filtered: filteredUsers.length,
+                total: enrichedUsers.length, // Общее количество всех пользователей
+                filtered: filteredUsers.length, // Количество после фильтрации
                 page: pageNum,
                 limit: limitNum,
                 totalPages: Math.ceil(filteredUsers.length / limitNum)
