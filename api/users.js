@@ -102,6 +102,7 @@ export default async function handler(req, res) {
                 let profile = users.find(u => u.telegramId === telegramId);
 
                 if (!profile) {
+                    console.log(`🆕 Создание нового профиля для пользователя: ${telegramId}`);
                     profile = {
                         id: Date.now().toString(),
                         telegramId,
@@ -117,7 +118,14 @@ export default async function handler(req, res) {
                         publicId: generatePublicId()
                     };
                     users.push(profile);
+                    console.log(`✅ Новый профиль создан:`, {
+                        telegramId: profile.telegramId,
+                        publicId: profile.publicId,
+                        name: profile.name,
+                        username: profile.username
+                    });
                 } else {
+                    console.log(`🔄 Обновление существующего профиля: ${telegramId}`);
                     // Обновляем данные профиля, если они изменились
                     if (username) profile.username = username;
                     if (name) profile.name = name;
