@@ -63,6 +63,7 @@ export default async function handler(req, res) {
 
     try {
         // Перезагружаем данные из файла перед каждым запросом
+        // Важно: делаем это синхронно, чтобы данные были актуальными
         loadUsersFromFile();
         loadListingsFromFile();
         
@@ -70,13 +71,33 @@ export default async function handler(req, res) {
         console.log(`📁 Путь к файлу пользователей: ${USERS_FILE}`);
         console.log(`📁 Файл пользователей существует: ${fs.existsSync(USERS_FILE)}`);
         
+        // Проверяем содержимое файла напрямую
+        if (fs.existsSync(USERS_FILE)) {
+            try {
+                const fileContent = fs.readFileSync(USERS_FILE, 'utf8');
+                const fileData = JSON.parse(fileContent);
+                console.log(`📄 В файле напрямую: ${Array.isArray(fileData) ? fileData.length : 'не массив'} пользователей`);
+                if (Array.isArray(fileData) && fileData.length > 0) {
+                    console.log(`👤 Первый пользователь в файле:`, {
+                        telegramId: fileData[0].telegramId,
+                        name: fileData[0].name,
+                        publicId: fileData[0].publicId
+                    });
+                }
+            } catch (fileError) {
+                console.error('❌ Ошибка чтения файла напрямую:', fileError);
+            }
+        }
+        
         if (users.length > 0) {
-            console.log(`👤 Пример пользователя:`, {
+            console.log(`👤 Пример пользователя из памяти:`, {
                 telegramId: users[0].telegramId,
                 name: users[0].name,
                 publicId: users[0].publicId,
                 createdAt: users[0].createdAt
             });
+        } else {
+            console.warn('⚠️ Массив users пуст после загрузки!');
         }
 
         if (req.method === 'GET') {
