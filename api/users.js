@@ -168,9 +168,23 @@ export default async function handler(req, res) {
                         const savedData = fs.readFileSync(USERS_FILE, 'utf8');
                         const savedUsers = JSON.parse(savedData);
                         console.log(`✅ Проверка: в файле сохранено ${savedUsers.length} пользователей`);
+                        
+                        // Проверяем, что наш пользователь там есть
+                        const foundUser = savedUsers.find(u => u.telegramId === telegramId);
+                        if (foundUser) {
+                            console.log(`✅ Пользователь найден в файле:`, {
+                                telegramId: foundUser.telegramId,
+                                publicId: foundUser.publicId,
+                                name: foundUser.name
+                            });
+                        } else {
+                            console.warn(`⚠️ Пользователь ${telegramId} не найден в сохраненном файле!`);
+                        }
                     } catch (checkError) {
                         console.error('❌ Ошибка проверки сохраненных данных:', checkError);
                     }
+                } else {
+                    console.error(`❌ Файл не был создан: ${USERS_FILE}`);
                 }
 
                 return res.status(200).json(profile);
