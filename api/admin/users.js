@@ -65,6 +65,8 @@ export default async function handler(req, res) {
         // Перезагружаем данные из файла перед каждым запросом
         loadUsersFromFile();
         loadListingsFromFile();
+        
+        console.log(`📊 Админ-панель: Загружено ${users.length} пользователей, ${listings.length} объявлений`);
 
         if (req.method === 'GET') {
             const { page = 1, limit = 50, search = '', sortBy = 'createdAt', sortOrder = 'desc' } = req.query || {};
